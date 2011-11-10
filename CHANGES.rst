@@ -5,4 +5,6 @@ Changelog of lizard-graph
 0.1 (unreleased)
 ----------------
 
-- Initial library skeleton created by nensskel.  [your name]
+- Initial views and urls.py.
+
+- Initial library skeleton created by nensskel.  [Jack Ha]

@@ -14,6 +14,9 @@ install_requires = [
     'django-extensions',
     'django-nose',
     'lizard-ui >= 3.0',
+    'lizard-fewsnorm',
+    'timeseries',
+    'nens-graph',
     'pkginfo',
     ],
 
@@ -22,15 +25,16 @@ tests_require = [
 
 setup(name='lizard-graph',
       version=version,
-      description="TODO",
+      description=("A set of views for different types of graphs "
+                   "for use with lizard"),
       long_description=long_description,
       # Get strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=['Programming Language :: Python',
                    'Framework :: Django',
                    ],
       keywords=[],
-      author='TODO',
-      author_email='TODO@nelen-schuurmans.nl',
+      author='Jack Ha',
+      author_email='jack.ha@nelen-schuurmans.nl',
       url='',
       license='GPL',
       packages=['lizard_graph'],
