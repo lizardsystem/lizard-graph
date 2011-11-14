@@ -16,5 +16,8 @@ urlpatterns = patterns(
     url(r'^$',
         LineGraphView.as_view(),
         name="lizard_graph_line_graph_view"),
+    url(r'^(?P<fews_norm_source_slug>.*)/line/$',
+        LineGraphView.as_view(),
+        name="lizard_graph_line_graph_view"),
     )
 urlpatterns += debugmode_urlpatterns()
