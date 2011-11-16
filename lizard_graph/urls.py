@@ -6,7 +6,7 @@ from django.contrib import admin
 
 from lizard_ui.urls import debugmode_urlpatterns
 
-from lizard_graph.views import LineGraphView
+from lizard_graph.views import GraphView
 
 
 admin.autodiscover()
@@ -14,10 +14,7 @@ admin.autodiscover()
 urlpatterns = patterns(
     '',
     url(r'^$',
-        LineGraphView.as_view(),
-        name="lizard_graph_line_graph_view"),
-    url(r'^(?P<fews_norm_source_slug>.*)/line/$',
-        LineGraphView.as_view(),
-        name="lizard_graph_line_graph_view"),
+        GraphView.as_view(),
+        name="lizard_graph_graph_view"),
     )
 urlpatterns += debugmode_urlpatterns()

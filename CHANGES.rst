@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.1 (unreleased)
 ----------------
 
+- Initial models for predefined graphs.
+
 - Initial working line graph, using timeseries, nens-graph and
   lizard-fewsnorm.
 
