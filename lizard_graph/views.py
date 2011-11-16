@@ -143,21 +143,62 @@ class TimeSeriesViewMixin(object):
         ts = timeseries.TimeSeries.as_dict(series, dt_start, dt_end)
         return ts
 
+    def _dt_from_request(self):
+        """
+        Get dt_start and dt_end from request. Revert to default.
+        """
+        start = self.request.GET.get('dt_start', None)
+        end = self.request.GET.get('dt_end', None)
+
+        if start is None:
+            # A random default
+            dt_start = datetime.datetime.now() - datetime.timedelta(days=365)
+        else:
+            dt_start = iso8601.parse_date(start)
+
+        if end is None:
+            # A random default
+            dt_end = datetime.datetime.now()
+        else:
+            dt_end = iso8601.parse_date(end)
+
+        return dt_start, dt_end
+
+    def _dimensions_from_request(self):
+        """
+        Return width, height from request.
+        """
+        width = int(self.request.GET.get('width', 380))
+        height = int(self.request.GET.get('height', 200))
+        return width, height
+
 
 class GraphView(View, TimeSeriesViewMixin):
     """
     Draw standard line graph based on provided input.
 
-    Example request. Lizard-graph is mounted under 'graph', the source
-    slug is 'test':
-
-    http://127.0.0.1:8000/graph/?dt_start=2011-02-11%2000:00:00&dt_end=2011-11-11%2000:00:00&item={%22fews_norm_source_slug%22:%22test%22,%22location_id%22:%22111.1%22,%22parameter_id%22:%22ALMR110%22,%22type%22:%22line%22}
+    See the README for details.
     """
+    def _graph_items_from_request(self):
+        """
+        Return list of graph items from request.
+        """
+        get = self.request.GET
+        predefined_graph = get.get('graph', None)
+        print predefined_graph
+
+        graph_items_json = self.request.GET.getlist('item')
+        graph_items = [json.loads(graph_item_json)
+                       for graph_item_json in graph_items_json]
+        return graph_items
+
     def get(self, request, *args, **kwargs):
         """
         Input:
         - dt_start
         - dt_end
+        - width
+        - height
 
         - item={fews_norm_source_slug:.., location_id:..,
           parameter_id:.., module_id:.., type:.., arguments:..}
@@ -168,21 +209,10 @@ class GraphView(View, TimeSeriesViewMixin):
         default_colors = ['green', 'blue', 'yellow', 'magenta', ]
         graph = DateGridGraph()
 
-        graph_items_json = request.GET.getlist('item')
-        graph_items = [json.loads(graph_item_json)
-                       for graph_item_json in graph_items_json]
-        start = request.GET.get('dt_start', None)
-        end = request.GET.get('dt_end', None)
-
-        if start is None:
-            dt_start = datetime.datetime.now() - datetime.timedelta(days=365)
-        else:
-            dt_start = iso8601.parse_date(start)
-
-        if end is None:
-            dt_end = datetime.datetime.now()
-        else:
-            dt_end = iso8601.parse_date(end)
+        dt_start, dt_end = self._dt_from_request()
+        width, height = self._dimensions_from_request()
+        graph_items = self._graph_items_from_request()
+        print graph_items
 
         color_index = 0
         # bar_status is to keep track of the height of stacked bars.

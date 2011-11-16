@@ -3,6 +3,7 @@ from django.db import models
 
 from lizard_fewsnorm.models import GeoLocationCache
 from lizard_fewsnorm.models import ParameterCache
+from lizard_fewsnorm.models import ModuleCache
 
 # Not so pretty. But fewsnorm requires lizard-map anyway, so why not use it?
 from lizard_map.models import ColorField
@@ -106,6 +107,9 @@ class GraphItem(models.Model):
                    'the provided location'))
     parameter = models.ForeignKey(
         ParameterCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
+    module = models.ForeignKey(
+        ModuleCache, null=True, blank=True,
         help_text='For all types that require a fewsnorm source')
     value = models.CharField(
         null=True, blank=True, max_length=40,

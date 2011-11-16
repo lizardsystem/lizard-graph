@@ -13,18 +13,21 @@ himself. The graph types that can be produced using this app are
 described in the parts below.
 
 
-Non predefined graphs
-=====================
+Graphs
+======
 
-The input the the base url, plus url parameters. An example is::
+The input is the base url, plus url parameters. An example is::
 
     http://127.0.0.1:8000/graph/?dt_start=2011-02-11%2000:00:00&dt_end=2011-11-11%2000:00:00&item={%22fews_norm_source_slug%22:%22test%22,%22location%22:%22111.1%22,%22parameter%22:%22ALMR110%22,%22type%22:%22line%22}
 
 Standard input is:
-- width: width of output image in pixels.
-- height: height of output image in pixels.
 - dt_start: datetime start, in iso8601 format.
 - dt_end: datetime end, in iso8601 format.
+- width: width of output image in pixels.
+- height: height of output image in pixels.
+
+All parameters can be omitted. For the datetime the session default
+will be taken. For the width and height also defaults will be taken.
 
 
 Line
@@ -137,3 +140,5 @@ you would::
 Shortcut to do the same::
 
     http://127.0.0.1:8000/graph/?dt_start=2011-02-11%2000:00:00&dt_end=2011-11-11%2000:00:00&graph=test&location=111.1&width=500&height=300
+
+And you can still use 'item' to add more stuff to your graph.
