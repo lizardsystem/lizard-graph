@@ -37,8 +37,8 @@ The standard graph has one or multiple lines. The values are on the
 y-axis. Provide an 'item', each one containing:
 
 - type: line
-- location_id
-- parameter_id
+- location
+- parameter
 - layout: color, line-width, line-style
 
 Horizontal line
@@ -105,7 +105,7 @@ is rainfall for an area with sub areas.
 - type: stacked-line-cum
 - location
 - parameter
-- period: month, day, quarter, year (reset-period)
+- reset-period: month, day, quarter, year
 - layout (optional): color, color-outside
 
 

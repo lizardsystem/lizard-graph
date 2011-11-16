@@ -12,6 +12,12 @@ from django.utils import simplejson as json
 from lizard_fewsnorm.models import Series
 from lizard_fewsnorm.models import GeoLocationCache
 from lizard_fewsnorm.models import FewsNormSource
+from lizard_fewsnorm.models import ParameterCache
+from lizard_fewsnorm.models import ModuleCache
+
+from lizard_graph.models import PredefinedGraph
+from lizard_graph.models import GraphItem
+from lizard_graph.models import GraphLayout
 
 from nens_graph.common import LessTicksAutoDateLocator
 from nens_graph.common import MultilineAutoDateFormatter
@@ -123,12 +129,6 @@ class TimeSeriesViewMixin(object):
         - module_id (optional)
         """
 
-        # fews_norm_source_slug = request.GET.get('fews_norm_source_slug', None)
-        # location_id = request.GET.get('location_id', None)  # '111.1'
-        # parameter_id = request.GET.get('parameter_id', None)  # 'ALMR110'
-        # module_id = request.GET.get('module_id', None)
-        # fews_norm_source = FewsNormSource.objects.get(
-        #     slug=fews_norm_source_slug)
         fews_norm_source = FewsNormSource.objects.get(
             slug=fews_norm_source_slug)
 
@@ -162,14 +162,23 @@ class TimeSeriesViewMixin(object):
         else:
             dt_end = iso8601.parse_date(end)
 
-        return dt_start, dt_end
+        if dt_end >= dt_start:
+            return dt_start, dt_end
+        else:
+            return dt_end, dt_start
 
     def _dimensions_from_request(self):
         """
         Return width, height from request.
         """
-        width = int(self.request.GET.get('width', 380))
-        height = int(self.request.GET.get('height', 200))
+        try:
+            width = int(self.request.GET['width'])
+        except (ValueError, KeyError):
+            width = 380
+        try:
+            height = int(self.request.GET['height'])
+        except (ValueError, KeyError):
+            height = 200
         return width, height
 
 
@@ -183,14 +192,62 @@ class GraphView(View, TimeSeriesViewMixin):
         """
         Return list of graph items from request.
         """
+        result = []
         get = self.request.GET
-        predefined_graph = get.get('graph', None)
-        print predefined_graph
 
+        # Using the shortcut graph=<graph-slug>
+        predefined_graph_slug = get.get('graph', None)
+        if predefined_graph_slug is not None:
+            # Add all graph items of graph to result
+            predefined_graph = PredefinedGraph.objects.get(
+                slug=predefined_graph_slug)
+            result.extend(predefined_graph.graphitem_set.all())
+
+        # All standard items: make memory objects of them.
         graph_items_json = self.request.GET.getlist('item')
-        graph_items = [json.loads(graph_item_json)
-                       for graph_item_json in graph_items_json]
-        return graph_items
+        for graph_item_json in graph_items_json:
+            # Create memory object for each graph_item and append to result.
+            graph_item_dict = json.loads(graph_item_json)
+            print graph_item_dict
+            graph_item = GraphItem()
+            if 'type' in graph_item_dict:
+                graph_item.graph_type = GraphItem.GRAPH_TYPES_REVERSE[
+                    graph_item_dict['type']]
+            if 'location' in graph_item_dict:
+                location = GeoLocationCache(ident=graph_item_dict['location'])
+                graph_item.location = location
+            if 'parameter' in graph_item_dict:
+                parameter = ParameterCache(ident=graph_item_dict['parameter'])
+                graph_item.parameter = parameter
+            if 'module' in graph_item_dict:
+                module = ModuleCache(ident=graph_item_dict['module'])
+                graph_item.module = module
+            if 'polarization' in graph_item_dict:
+                graph_item.value = graph_item_dict['polarization']
+            if 'period' in graph_item_dict:
+                graph_item.period = GraphItem.PERIOD_REVERSE[
+                    graph_item_dict['period']]
+            if 'reset-period' in graph_item_dict:
+                graph_item.period = GraphItem.PERIOD_REVERSE[
+                    graph_item_dict['reset-period']]
+            if 'aggregation' in graph_item_dict:
+                graph_item.period = GraphItem.PERIOD_REVERSE[
+                    graph_item_dict['aggregation']]
+            if 'layout' in graph_item_dict:
+                layout_dict = graph_item_dict['layout']
+                layout = GraphLayout()
+                if 'color' in layout_dict:
+                    layout.color = layout_dict['color']
+                if 'color-outside' in layout_dict:
+                    layout.color_outside = layout_dict['color-outside']
+                if 'line-width' in layout_dict:
+                    layout.color_outside = layout_dict['line-width']
+                if 'line-style' in layout_dict:
+                    layout.color_outside = layout_dict['line-style']
+                graph_item.layout = layout
+            result.append(graph_item)
+
+        return result
 
     def get(self, request, *args, **kwargs):
         """
@@ -212,7 +269,6 @@ class GraphView(View, TimeSeriesViewMixin):
         dt_start, dt_end = self._dt_from_request()
         width, height = self._dimensions_from_request()
         graph_items = self._graph_items_from_request()
-        print graph_items
 
         color_index = 0
         # bar_status is to keep track of the height of stacked bars.

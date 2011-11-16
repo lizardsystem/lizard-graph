@@ -51,6 +51,18 @@ class GraphLayout(models.Model):
     def __unicode__(self):
         return 'GraphLayout'
 
+    def as_dict(self):
+        result = {}
+        if self.color:
+            result['color'] = self.color
+        if self.color_outside:
+            result['color-outside'] = self.color_outside
+        if self.line_width:
+            result['line-width'] = self.line_width
+        if self.line_style:
+            result['line-style'] = self.line_style
+        return result
+
 
 class GraphItem(models.Model):
     """
@@ -87,6 +99,7 @@ class GraphItem(models.Model):
         (PERIOD_QUARTER, 'quarter'),
         (PERIOD_YEAR, 'year'),
         )
+    PERIOD_REVERSE = dict([(b, a) for a, b in PERIOD_CHOICES])
 
     AGGREGATION_AVG = 1
     AGGREGATION_SUM = 2
@@ -94,12 +107,14 @@ class GraphItem(models.Model):
         (AGGREGATION_AVG, 'avg'),
         (AGGREGATION_SUM, 'sum'),
         )
+    AGGREGATION_REVERSE = dict([(b, a) for a, b in AGGREGATION_CHOICES])
 
     predefined_graph = models.ForeignKey(PredefinedGraph)
     index = models.IntegerField(default=100)
 
     graph_type = models.IntegerField(
         choices=GRAPH_TYPE_CHOICES, default=GRAPH_TYPE_LINE)
+
     location = models.ForeignKey(
         GeoLocationCache, null=True, blank=True,
         help_text=('Optional even if fewsnorm is used, because location '
@@ -111,6 +126,7 @@ class GraphItem(models.Model):
     module = models.ForeignKey(
         ModuleCache, null=True, blank=True,
         help_text='For all types that require a fewsnorm source')
+
     value = models.CharField(
         null=True, blank=True, max_length=40,
         help_text=('Numeric value for horizontal-line and vertical-line. '
@@ -123,8 +139,16 @@ class GraphItem(models.Model):
     aggregation = models.IntegerField(
         null=True, blank=True, choices=AGGREGATION_CHOICES,
         help_text='Required for stacked-bar')
+
     layout = models.ForeignKey(
         GraphLayout, blank=True, null=True, default=None)
 
+    class Meta:
+        ordering = ('index', )
+
     def __unicode__(self):
         return '%s %d' % (self.predefined_graph, self.index)
+
+    @property
+    def fews_norm_db(self):
+        return self.location.fews_norm_source.database_name
