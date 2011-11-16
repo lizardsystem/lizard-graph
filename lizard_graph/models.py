@@ -150,5 +150,8 @@ class GraphItem(models.Model):
         return '%s %d' % (self.predefined_graph, self.index)
 
     @property
-    def fews_norm_db(self):
-        return self.location.fews_norm_source.database_name
+    def fews_norm_db_name(self):
+        if self.location:
+            return self.location.fews_norm_source.database_name
+        else:
+            return None

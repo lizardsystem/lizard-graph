@@ -27,6 +27,38 @@ from timeseries import timeseries
 logger = logging.getLogger(__name__)
 
 
+def dates_values(timeseries):
+    """
+    Return lists of dates, values, flag_dates and flag_values.
+
+    Accepts single timeseries. Easy when using matplotlib.
+    """
+    dates = []
+    values = []
+    flag_dates = []
+    flag_values = []
+    for timestamp, (value, flag, comment) in timeseries.sorted_event_items():
+        if value is not None:
+            dates.append(timestamp)
+            values.append(value)
+
+            # Flags:
+            # 0: Original/Reliable
+            # 1: Corrected/Reliable
+            # 2: Completed/Reliable
+            # 3: Original/Doubtful
+            # 4: Corrected/Doubtful
+            # 5: Completed/Doubtful
+            # 6: Missing/Unreliable
+            # 7: Corrected/Unreliable
+            # 8: Completed/Unreliable
+            # 9: Missing value
+            if flag > 2:
+                flag_dates.append(timestamp)
+                flag_values.append(flag)
+    return dates, values, flag_dates, flag_values
+
+
 class DateGridGraph(NensGraph):
     """
     Standard graph with a grid and dates on the x-axis.
@@ -80,7 +112,7 @@ class DateGridGraph(NensGraph):
         title = '%s - %s (%s)' % (
             single_ts.location_id, single_ts.parameter_id, single_ts.units)
 
-        dates, values, flag_dates, flag_values = single_ts.dates_values()
+        dates, values, flag_dates, flag_values = dates_values(single_ts)
 
         if not values:
             return
@@ -106,7 +138,7 @@ class DateGridGraph(NensGraph):
         # Make seconds from fews timesteps.
         TIME_STEPS = {'SETS1440': 1440 * 60}
 
-        dates, values, flag_dates, flag_values = single_ts.dates_values()
+        dates, values, flag_dates, flag_values = dates_values(single_ts)
 
         if not values:
             return
@@ -120,8 +152,7 @@ class TimeSeriesViewMixin(object):
     """
 
     def _time_series_from_graph_item(
-        self, dt_start, dt_end, fews_norm_source_slug,
-        location_id=None, parameter_id=None, module_id=None, type=None):
+        self, dt_start, dt_end, graph_item, db_name=None):
         """
         - fews_norm_source_slug
         - location_id (optional)
@@ -129,16 +160,18 @@ class TimeSeriesViewMixin(object):
         - module_id (optional)
         """
 
-        fews_norm_source = FewsNormSource.objects.get(
-            slug=fews_norm_source_slug)
+        if db_name is None:
+            db_name = graph_item.fews_norm_db_name
+        if not db_name:
+            return None
 
-        series = Series.objects.using(fews_norm_source.database_name).all()
-        if location_id is not None:
-            series = series.filter(location__id=location_id)
-        if parameter_id is not None:
-            series = series.filter(parameter__id=parameter_id)
-        if module_id is not None:
-            series = series.filter(module__id=module_id)
+        series = Series.objects.using(db_name).all()
+        if graph_item.location is not None:
+            series = series.filter(location__id=graph_item.location.id)
+        if graph_item.parameter is not None:
+            series = series.filter(parameter__id=graph_item.parameter.id)
+        if graph_item.module is not None:
+            series = series.filter(module__id=graph_item.module.id)
 
         ts = timeseries.TimeSeries.as_dict(series, dt_start, dt_end)
         return ts
@@ -274,15 +307,19 @@ class GraphView(View, TimeSeriesViewMixin):
         # bar_status is to keep track of the height of stacked bars.
         bar_status = {}
         for index, graph_item in enumerate(graph_items):
+            # TODO: this part is not finished yet.
             ts = self._time_series_from_graph_item(
-                dt_start, dt_end, **graph_item)
-            item_type = graph_item['type']
+                dt_start, dt_end, graph_item)
+            if ts is None:
+                continue
+            graph_type = graph_item.graph_type
 
             for (loc, par), single_ts in ts.items():
                 color = default_colors[color_index]
-                if item_type == 'line':
-                    graph.line_from_single_ts(single_ts, color, graph_item)
-                elif item_type == 'bar':
+                if graph__type == GraphItem.GRAPH_TYPE_LINE:
+                    graph.line_from_single_ts(
+                        single_ts, color, graph_item)
+                elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR:
                     bar_status = graph.bar_from_single_ts(
                         bar_status, single_ts, color, graph_item)
 
