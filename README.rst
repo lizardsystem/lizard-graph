@@ -26,8 +26,17 @@ Standard input is:
 - width: width of output image in pixels.
 - height: height of output image in pixels.
 
+- aggregation-period: month*, day, quarter, year (for stacked-bar)
+- aggregation: sum*, avg (for stacked-bar)
+- reset-period: month*, day, quarter, year (for stacked-line-cumulative)
+
 All parameters can be omitted. For the datetime the session default
 will be taken. For the width and height also defaults will be taken.
+
+Labels
+- title: default none
+- x-label: default none
+- y-label: default none
 
 
 Line
@@ -75,10 +84,12 @@ example application is a waterbalance.
 - type: stacked-bar
 - location
 - parameter
-- period: month, day, quarter, year
-- aggregation: sum, avg
 - polarization (optional): positive (default), negative
 - layout (optional): color, color-outside
+
+Global parameters (outside item):
+- aggregation-period: month, day, quarter, year
+- aggregation: sum, avg
 
 
 Stacked line
@@ -105,8 +116,10 @@ is rainfall for an area with sub areas.
 - type: stacked-line-cum
 - location
 - parameter
-- reset-period: month, day, quarter, year
 - layout (optional): color, color-outside
+
+Global parameter (outside item):
+- reset-period: month, day, quarter, year
 
 
 Predefined graphs

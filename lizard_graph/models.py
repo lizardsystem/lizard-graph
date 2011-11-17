@@ -10,11 +10,37 @@ from lizard_map.models import ColorField
 from lizard_fewsnorm.models import Series
 from timeseries import timeseries
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class PredefinedGraph(models.Model):
     """
     Predefined graph. Graph entries must point to a predefined graph.
     """
+    PERIOD_DAY = 1
+    PERIOD_MONTH = 2
+    PERIOD_QUARTER = 3
+    PERIOD_YEAR = 4
+    PERIOD_CHOICES = (
+        (PERIOD_DAY, 'day'),
+        (PERIOD_MONTH, 'month'),
+        (PERIOD_QUARTER, 'quarter'),
+        (PERIOD_YEAR, 'year'),
+        )
+    PERIOD = dict(PERIOD_CHOICES)
+    PERIOD_REVERSE = dict([(b, a) for a, b in PERIOD_CHOICES])
+
+    AGGREGATION_AVG = 1
+    AGGREGATION_SUM = 2
+    AGGREGATION_CHOICES = (
+        (AGGREGATION_AVG, 'avg'),
+        (AGGREGATION_SUM, 'sum'),
+        )
+    AGGREGATION = dict(AGGREGATION_CHOICES)
+    AGGREGATION_REVERSE = dict([(b, a) for a, b in AGGREGATION_CHOICES])
+
     name = models.CharField(max_length=40)
     slug = models.SlugField(unique=True)
     description = models.TextField(null=True, blank=True)
@@ -28,6 +54,19 @@ class PredefinedGraph(models.Model):
     y_label = models.CharField(
         null=True, blank=True, max_length=80,
         help_text="Last filled in is used in graph")
+    y_range_min = models.FloatField(null=True, blank=True,
+                                    help_text='Y range min')
+    y_range_max = models.FloatField(null=True, blank=True,
+                                    help_text='Y range max')
+    aggregation = models.IntegerField(
+        null=True, blank=True, choices=AGGREGATION_CHOICES,
+        help_text='Required for stacked-bar')
+    aggregation_period = models.IntegerField(
+        choices=PERIOD_CHOICES, null=True, blank=True,
+        help_text=('For stacked-bar'))
+    reset_period = models.IntegerField(
+        choices=PERIOD_CHOICES, null=True, blank=True,
+        help_text=('For stacked-line-cumulative'))
 
     def __unicode__(self):
         return self.name
@@ -45,6 +84,25 @@ class PredefinedGraph(models.Model):
                     if not new_graph_item.location:
                         new_graph_item.location = location
             result.extend(new_graph_items)
+        return result
+
+    def graph_settings(self):
+        result = {}
+        if self.title:
+            result['title'] = self.title
+        if self.x_label:
+            result['x-label'] = self.x_label
+        if self.y_label:
+            result['y-label'] = self.y_label
+        if self.y_range_min:
+            result['y-range-min'] = self.y_range_min
+        if self.aggregation:
+            result['aggregation'] = self.AGGREGATION[self.aggregation]
+        if self.aggregation_period:
+            result['aggregation-period'] = self.PERIOD[
+                self.aggregation_period]
+        if self.reset_period:
+            result['reset-period'] = self.PERIOD[self.reset_period]
         return result
 
 
@@ -119,28 +177,6 @@ class GraphItem(models.Model):
     GRAPH_TYPES = dict(GRAPH_TYPE_CHOICES)
     GRAPH_TYPES_REVERSE = dict([(b, a) for a, b in GRAPH_TYPE_CHOICES])
 
-    PERIOD_DAY = 1
-    PERIOD_MONTH = 2
-    PERIOD_QUARTER = 3
-    PERIOD_YEAR = 4
-    PERIOD_CHOICES = (
-        (PERIOD_DAY, 'day'),
-        (PERIOD_MONTH, 'month'),
-        (PERIOD_QUARTER, 'quarter'),
-        (PERIOD_YEAR, 'year'),
-        )
-    PERIOD = dict(PERIOD_CHOICES)
-    PERIOD_REVERSE = dict([(b, a) for a, b in PERIOD_CHOICES])
-
-    AGGREGATION_AVG = 1
-    AGGREGATION_SUM = 2
-    AGGREGATION_CHOICES = (
-        (AGGREGATION_AVG, 'avg'),
-        (AGGREGATION_SUM, 'sum'),
-        )
-    AGGREGATION = dict(AGGREGATION_CHOICES)
-    AGGREGATION_REVERSE = dict([(b, a) for a, b in AGGREGATION_CHOICES])
-
     predefined_graph = models.ForeignKey(PredefinedGraph)
     index = models.IntegerField(default=100)
 
@@ -164,13 +200,6 @@ class GraphItem(models.Model):
         help_text=('Numeric value for horizontal-line and vertical-line. '
                    '"negative" for stacked-bar negative polarization. '
                    'Slug of predefined graph in case of predefined-graph.'))
-    period = models.IntegerField(
-        choices=PERIOD_CHOICES, null=True, blank=True,
-        help_text=('Reset-period for stacked-line-cumulative or '
-                   'aggregation period for stacked-bar'))
-    aggregation = models.IntegerField(
-        null=True, blank=True, choices=AGGREGATION_CHOICES,
-        help_text='Required for stacked-bar')
 
     layout = models.ForeignKey(
         GraphLayout, blank=True, null=True, default=None)
@@ -179,7 +208,9 @@ class GraphItem(models.Model):
         ordering = ('index', )
 
     def __unicode__(self):
-        return '%s %d' % (self.predefined_graph, self.index)
+        return '%s %s %d' % (
+            self.predefined_graph,
+            GraphItem.GRAPH_TYPES[self.graph_type], self.index)
 
     @property
     def fews_norm_db_name(self):
@@ -221,6 +252,12 @@ class GraphItem(models.Model):
         ts = timeseries.TimeSeries.as_dict(series, dt_start, dt_end)
         return ts
 
+    def layout_dict(self):
+        if self.layout:
+            return self.layout.as_dict()
+        else:
+            return {}
+
     @classmethod
     def from_dict(cls, graph_item_dict):
         """
@@ -236,9 +273,6 @@ class GraphItem(models.Model):
         - module: fews module id
         - polarization (will be mapped to value)
         - value: depends on type
-        - period: 'day', 'month', 'quarter' or 'year'
-        - reset-period (will be mapped to period)
-        - aggregation: 'avg' or 'sum'
         - layout: dict with optional keys color, color-inside,
           line-width, line-style
         """
@@ -246,12 +280,27 @@ class GraphItem(models.Model):
             graph_item_dict['type']]
         location = None
         if 'location' in graph_item_dict:
-            location = GeoLocationCache(ident=graph_item_dict['location'])
+            try:
+                location = GeoLocationCache.objects.get(
+                    ident=graph_item_dict['location'])
+            except GeoLocationCache.DoesNotExist:
+                # TODO: see if "db_name" is provided, then add
+                # location anyway
+                location = GeoLocationCache(
+                    ident=graph_item_dict['location'])
+                logger.exception(
+                    "Ignored not existing GeoLocationCache for ident=%s" %
+                    graph_item_dict['location'])
 
         if graph_type == GraphItem.GRAPH_TYPE_PREDEFINED_GRAPH:
             # This is a special case. Return underlying GraphItems
-            predefined_graph = PredefinedGraph.objects.get(
-                slug=graph_item_dict['value'])
+            try:
+                predefined_graph = PredefinedGraph.objects.get(
+                    slug=graph_item_dict['value'])
+            except PredefinedGraph.DoesNotExist:
+                logger.exception("Tried to fetch a non-existing predefined "
+                                 "graph %s" % graph_item_dict['value'])
+                return []
             return predefined_graph.unfolded_graph_items(location)
 
         graph_item = GraphItem()
@@ -267,15 +316,6 @@ class GraphItem(models.Model):
             graph_item.value = graph_item_dict['polarization']
         if 'value' in graph_item_dict:
             graph_item.value = graph_item_dict['value']
-        if 'period' in graph_item_dict:
-            graph_item.period = GraphItem.PERIOD_REVERSE[
-                graph_item_dict['period']]
-        if 'reset-period' in graph_item_dict:
-            graph_item.period = GraphItem.PERIOD_REVERSE[
-                graph_item_dict['reset-period']]
-        if 'aggregation' in graph_item_dict:
-            graph_item.aggregation = GraphItem.AGGREGATION_REVERSE[
-                graph_item_dict['aggregation']]
         if 'layout' in graph_item_dict:
             layout_dict = graph_item_dict['layout']
             graph_item.layout = GraphLayout.from_dict(layout_dict)
@@ -299,10 +339,6 @@ class GraphItem(models.Model):
             result['module'] = self.module.ident
         if self.value is not None:
             result['value'] = self.value
-        if self.period is not None:
-            result['period'] = GraphItem.PERIOD[self.period]
-        if self.aggregation is not None:
-            result['aggregation'] = GraphItem.AGGREGATION[self.aggregation]
         if self.layout is not None:
             result['layout'] = self.layout.as_dict()
         return result

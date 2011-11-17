@@ -50,28 +50,6 @@ class TimeSeriesViewMixinTest(TestCase):
                     iso8601.parse_date('2011-03-13 00:00:00'),)
         self.assertEquals(result, expected)
 
-    def dimension_from_request(self, get):
-        class MockRequest(object):
-            def __init__(self, get):
-                self.GET = QueryDict(get)
-        request = MockRequest(get)
-        timeseries_view_mixin = TimeSeriesViewMixin()
-        timeseries_view_mixin.request = request
-        return timeseries_view_mixin._dimensions_from_request()
-
-    def test_dimensions_from_request(self):
-        result = self.dimension_from_request('width=400&height=300')
-        expected = (400, 300)
-        self.assertEquals(result, expected)
-
-    def test_dimensions_from_request2(self):
-        result = self.dimension_from_request('')
-        self.assertTrue(result)
-
-    def test_dimensions_from_request3(self):
-        result = self.dimension_from_request('width=asdf')
-        self.assertTrue(result)
-
 
 class GraphViewTest(TestCase):
     def graph_items_from_request(self, get):
@@ -89,41 +67,54 @@ class GraphViewTest(TestCase):
         # Make 2 dummy items
         pg.graphitem_set.create()
         pg.graphitem_set.create()
-        result = self.graph_items_from_request('graph=test')
+        result, graph_settings = self.graph_items_from_request('graph=test')
 
         self.assertEquals(len(result), 2)
+        for graph_item in result:
+            self.assertTrue(isinstance(graph_item, GraphItem))
+
+    def test_graph_items_from_request2(self):
+        pg = PredefinedGraph(name='test', slug='test')
+        pg.save()
+        # Make 2 dummy items
+        pg.graphitem_set.create(value='test-item-1')
+        pg.graphitem_set.create(value='test-item-2')
+
+        pg2 = PredefinedGraph(name='test2', slug='test2')
+        pg2.save()
+        # Make 1 dummy item
+        pg2.graphitem_set.create(
+            graph_type=GraphItem.GRAPH_TYPE_PREDEFINED_GRAPH,
+            value='test',
+            )
+
+        result, graph_settings = self.graph_items_from_request('graph=test2')
+
+        # 2 results: the graph item from pg2 is "unfolded" in graph
+        # items from pg.
         for element in result:
             self.assertTrue(isinstance(element, GraphItem))
-
-    # def test_graph_items_from_request2(self):
-    #     pg = PredefinedGraph(name='test', slug='test')
-    #     pg.save()
-    #     # Make 2 dummy items
-    #     pg.graphitem_set.create()
-    #     pg.graphitem_set.create()
-
-    #     pg2 = PredefinedGraph(name='test2', slug='test2')
-    #     pg2.save()
-    #     # Make 1 dummy item
-    #     pg2.graphitem_set.create(
-    #         graph_type=GraphItem.GRAPH_TYPE_PREDEFINED_GRAPH,
-    #         value='test',
-    #         )
-
-    #     result = self.graph_items_from_request('graph=test2')
-
-    #     # 2 results: the graph item from pg2 is "unfolded" in graph
-    #     # items from pg.
-    #     self.assertEquals(len(result), 2)
-    #     for element in result:
-    #         self.assertTrue(isinstance(element, GraphItem))
+        self.assertEquals(len(result), 2)
 
     def test_graph_items_from_request3(self):
-        result = self.graph_items_from_request(
+        result, graph_settings = self.graph_items_from_request(
             'item={"type":"line","location":"111.1","parameter":"ALM",'
             '"layout":{"color":"red"}}')
 
         self.assertEquals(len(result), 1)
+        self.assertEquals(graph_settings['aggregation-period'],
+                          'month')
+
+    def test_graph_items_from_request3(self):
+        result, graph_settings = self.graph_items_from_request(
+            'item={"type":"line","location":"111.1","parameter":"ALM",'
+            '"layout":{"color":"red"}}&aggregation-period=year&'
+            'aggregation=avg&reset-period=day')
+
+        self.assertEquals(len(result), 1)
+        self.assertEquals(graph_settings['aggregation-period'], 'year')
+        self.assertEquals(graph_settings['aggregation'], 'avg')
+        self.assertEquals(graph_settings['reset-period'], 'day')
 
 
 class GraphLayoutTest(TestCase):
@@ -184,8 +175,6 @@ class GraphItemTest(TestCase):
             'parameter': 'fews-parameter-id',
             'module': 'fews-module-id',
             'value': 'blabla',
-            'period': 'year',
-            'aggregation': 'avg',
             'layout': layout_dict,
             }
         graph_items = GraphItem.from_dict(graph_item_dict)
@@ -200,10 +189,6 @@ class GraphItemTest(TestCase):
             graph_items[0].module.ident, 'fews-module-id')
         self.assertEquals(
             graph_items[0].value, 'blabla')
-        self.assertEquals(
-            graph_items[0].period, GraphItem.PERIOD_YEAR)
-        self.assertEquals(
-            graph_items[0].aggregation, GraphItem.AGGREGATION_AVG)
         self.assertEquals(
             graph_items[0].layout.as_dict(), layout_dict)
         self.assertEquals(graph_items[0].as_dict(), graph_item_dict)
@@ -260,3 +245,11 @@ class GraphItemTest(TestCase):
         self.assertEquals(graph_items[0].value, 'line-1')
         self.assertEquals(graph_items[1].value, 'sub-1')
         self.assertEquals(graph_items[2].value, 'sub-2')
+
+    def test_from_dict_predefined_graph3(self):
+        graph_item_dict = {
+            'type': 'predefined-graph',
+            'value': 'does-not-exist-graph'
+            }
+        graph_items = GraphItem.from_dict(graph_item_dict)
+        self.assertEquals(len(graph_items), 0)
