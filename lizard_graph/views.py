@@ -9,20 +9,12 @@ from django.views.generic.base import View
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-from lizard_fewsnorm.models import Series
-from lizard_fewsnorm.models import GeoLocationCache
-from lizard_fewsnorm.models import FewsNormSource
-from lizard_fewsnorm.models import ParameterCache
-from lizard_fewsnorm.models import ModuleCache
-
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
-from lizard_graph.models import GraphLayout
 
 from nens_graph.common import LessTicksAutoDateLocator
 from nens_graph.common import MultilineAutoDateFormatter
 from nens_graph.common import NensGraph
-from timeseries import timeseries
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +135,8 @@ class DateGridGraph(NensGraph):
         if not values:
             return
 
+        TIME_STEPS
+
         self.axes.bar(dates, values, edgecolor='grey', width=60, label='test')
 
 
@@ -150,31 +144,6 @@ class TimeSeriesViewMixin(object):
     """
     A mixin for a view that uses fewsnorm timeseries.
     """
-
-    def _time_series_from_graph_item(
-        self, dt_start, dt_end, graph_item, db_name=None):
-        """
-        - fews_norm_source_slug
-        - location_id (optional)
-        - parameter_id (optional)
-        - module_id (optional)
-        """
-
-        if db_name is None:
-            db_name = graph_item.fews_norm_db_name
-        if not db_name:
-            return None
-
-        series = Series.objects.using(db_name).all()
-        if graph_item.location is not None:
-            series = series.filter(location__id=graph_item.location.id)
-        if graph_item.parameter is not None:
-            series = series.filter(parameter__id=graph_item.parameter.id)
-        if graph_item.module is not None:
-            series = series.filter(module__id=graph_item.module.id)
-
-        ts = timeseries.TimeSeries.as_dict(series, dt_start, dt_end)
-        return ts
 
     def _dt_from_request(self):
         """
@@ -221,9 +190,12 @@ class GraphView(View, TimeSeriesViewMixin):
 
     See the README for details.
     """
+
     def _graph_items_from_request(self):
         """
         Return list of graph items from request.
+
+        The graph items are created in memory or retrieved from memory.
         """
         result = []
         get = self.request.GET
@@ -241,44 +213,8 @@ class GraphView(View, TimeSeriesViewMixin):
         for graph_item_json in graph_items_json:
             # Create memory object for each graph_item and append to result.
             graph_item_dict = json.loads(graph_item_json)
-            print graph_item_dict
-            graph_item = GraphItem()
-            if 'type' in graph_item_dict:
-                graph_item.graph_type = GraphItem.GRAPH_TYPES_REVERSE[
-                    graph_item_dict['type']]
-            if 'location' in graph_item_dict:
-                location = GeoLocationCache(ident=graph_item_dict['location'])
-                graph_item.location = location
-            if 'parameter' in graph_item_dict:
-                parameter = ParameterCache(ident=graph_item_dict['parameter'])
-                graph_item.parameter = parameter
-            if 'module' in graph_item_dict:
-                module = ModuleCache(ident=graph_item_dict['module'])
-                graph_item.module = module
-            if 'polarization' in graph_item_dict:
-                graph_item.value = graph_item_dict['polarization']
-            if 'period' in graph_item_dict:
-                graph_item.period = GraphItem.PERIOD_REVERSE[
-                    graph_item_dict['period']]
-            if 'reset-period' in graph_item_dict:
-                graph_item.period = GraphItem.PERIOD_REVERSE[
-                    graph_item_dict['reset-period']]
-            if 'aggregation' in graph_item_dict:
-                graph_item.period = GraphItem.PERIOD_REVERSE[
-                    graph_item_dict['aggregation']]
-            if 'layout' in graph_item_dict:
-                layout_dict = graph_item_dict['layout']
-                layout = GraphLayout()
-                if 'color' in layout_dict:
-                    layout.color = layout_dict['color']
-                if 'color-outside' in layout_dict:
-                    layout.color_outside = layout_dict['color-outside']
-                if 'line-width' in layout_dict:
-                    layout.color_outside = layout_dict['line-width']
-                if 'line-style' in layout_dict:
-                    layout.color_outside = layout_dict['line-style']
-                graph_item.layout = layout
-            result.append(graph_item)
+            graph_items = GraphItem.from_dict(graph_item_dict)
+            result.extend(graph_items)
 
         return result
 
@@ -308,15 +244,12 @@ class GraphView(View, TimeSeriesViewMixin):
         bar_status = {}
         for index, graph_item in enumerate(graph_items):
             # TODO: this part is not finished yet.
-            ts = self._time_series_from_graph_item(
-                dt_start, dt_end, graph_item)
-            if ts is None:
-                continue
+            ts = graph_item.time_series(dt_start, dt_end)
             graph_type = graph_item.graph_type
 
             for (loc, par), single_ts in ts.items():
                 color = default_colors[color_index]
-                if graph__type == GraphItem.GRAPH_TYPE_LINE:
+                if graph_type == GraphItem.GRAPH_TYPE_LINE:
                     graph.line_from_single_ts(
                         single_ts, color, graph_item)
                 elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR:
