@@ -97,12 +97,12 @@ class PredefinedGraph(models.Model):
         if self.y_range_min:
             result['y-range-min'] = self.y_range_min
         if self.aggregation:
-            result['aggregation'] = self.AGGREGATION[self.aggregation]
+            result['aggregation'] = PredefinedGraph.AGGREGATION[self.aggregation]
         if self.aggregation_period:
-            result['aggregation-period'] = self.PERIOD[
+            result['aggregation-period'] = PredefinedGraph.PERIOD[
                 self.aggregation_period]
         if self.reset_period:
-            result['reset-period'] = self.PERIOD[self.reset_period]
+            result['reset-period'] = PredefinedGraph.PERIOD[self.reset_period]
         return result
 
 
@@ -113,18 +113,19 @@ class GraphLayout(models.Model):
     Options that are used depend on the graph type defined in the
     graph entry.
     """
-    color = ColorField(default='')
-    color_outside = ColorField(default='',
+    color = ColorField(null=True, blank=True, default='')
+    color_outside = ColorField(null=True, blank=True, default='',
         help_text="For stacked-bar, stacked-line and stacked-line-cum")
     line_width = models.FloatField(
-        null=True, blank=True, default=None,
+        null=True, blank=True, default='',
         help_text="For everything with lines")
     line_style = models.CharField(
         null=True, blank=True, max_length=10, default=None,
         help_text="For everything with lines")
 
     def __unicode__(self):
-        return 'GraphLayout'
+        return 'GraphLayout %r %r %r %r' % (
+            self.color, self.color_outside, self.line_width, self.line_style)
 
     @classmethod
     def from_dict(cls, layout_dict):
@@ -227,15 +228,7 @@ class GraphItem(models.Model):
             GraphItem.GRAPH_TYPE_STACKED_LINE_CUMULATIVE,
             ]
 
-    def time_series(
-        self, dt_start, dt_end, db_name=None):
-        """
-        Return dictionary of timeseries.
-
-        Keys are (location, parameter), value is timeseries object.
-        """
-        if not self._require_fewsnorm():
-            return {}
+    def series(self, db_name=None):
         if db_name is None:
             db_name = self.fews_norm_db_name
         if not db_name:
@@ -248,8 +241,22 @@ class GraphItem(models.Model):
             series = series.filter(parameter__id=self.parameter.ident)
         if self.module is not None:
             series = series.filter(module__id=self.module.ident)
+        return series
 
-        ts = timeseries.TimeSeries.as_dict(series, dt_start, dt_end)
+
+    def time_series(
+        self, dt_start, dt_end, db_name=None):
+        """
+        Return dictionary of timeseries.
+
+        Keys are (location, parameter), value is timeseries object.
+        """
+        if not self._require_fewsnorm():
+            return {}
+
+        series = self.series(db_name=db_name)
+        ts = timeseries.TimeSeries.as_dict(
+            series, dt_start, dt_end)
         return ts
 
     def layout_dict(self):

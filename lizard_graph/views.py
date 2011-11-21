@@ -6,6 +6,10 @@ import iso8601
 import logging
 from matplotlib.dates import date2num
 
+from django.db.models import Avg
+from django.db.models import Min
+from django.db.models import Max
+from django.db.models import Sum
 from django.views.generic.base import View
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -16,6 +20,9 @@ from lizard_graph.models import GraphItem
 from nens_graph.common import LessTicksAutoDateLocator
 from nens_graph.common import MultilineAutoDateFormatter
 from nens_graph.common import NensGraph
+
+from timeseries import timeseries
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +57,84 @@ def dates_values(timeseries):
                 flag_dates.append(timestamp)
                 flag_values.append(flag)
     return dates, values, flag_dates, flag_values
+
+
+def time_series_aggregated(qs, start, end,
+                           aggregation, aggregation_period, polarization=None):
+    """
+    Aggregated time series. Based on TimeSeries._from_django_QuerySet.
+
+    It was not handy to integrate this into
+    TimeSeries, because the import function would explode.
+
+    Postgres SQL that aggregates:
+
+        select date_part('year', datetime) as year, date_part('month', datetime) as month, sum(scalarvalue) from nskv00_opdb.timeseriesvaluesandflags group by year, month order by year, month;
+
+        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({'month': "date_part('month', datetime)", 'year': "date_part('year', datetime)"}).values('year', 'month').annotate(Sum('value'), Max('flag'))
+
+        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({'month': "date_part('month', datetime)", 'year': "date_part('year', datetime)", 'day': "date_part('day', datetime)"}).values('year', 'month', 'day').annotate(Sum('value'), Max('flag')).order_by('year', 'month', 'day')
+    """
+    POLARIZATION = {'negative': -1}
+
+    result = {}
+    # Convert aggregation vars from strings to defined constants
+    aggregation_period = PredefinedGraph.PERIOD_REVERSE[aggregation_period]
+    aggregation = PredefinedGraph.AGGREGATION_REVERSE[aggregation]
+    multiplier = POLARIZATION.get(polarization, 1)
+
+    for series in qs:
+        obj = timeseries.TimeSeries()
+        event = None
+        event_set = series.event_set.all()
+        if start is not None:
+            event_set = event_set.filter(timestamp__gte=start)
+        if end is not None:
+            event_set = event_set.filter(timestamp__lte=end)
+
+        # Aggregation period
+        if aggregation_period == PredefinedGraph.PERIOD_YEAR:
+            event_set = event_set.extra(
+                {'year': "date_part('year', datetime)"}).values(
+                'year').order_by('year')
+        elif (aggregation_period == PredefinedGraph.PERIOD_MONTH or
+              aggregation_period == PredefinedGraph.PERIOD_QUARTER):
+            event_set = event_set.extra(
+                {'year': "date_part('year', datetime)",
+                 'month': "date_part('month', datetime)", }).values(
+                'year', 'month').order_by('year', 'month')
+        elif aggregation_period == PredefinedGraph.PERIOD_DAY:
+            event_set = event_set.extra(
+                {'year': "date_part('year', datetime)",
+                 'month': "date_part('month', datetime)",
+                 'day': "date_part('day', datetime)", }).values(
+                'year', 'month', 'day').order_by('year', 'month', 'day')
+        # Aggregate value and flags
+        if aggregation == PredefinedGraph.AGGREGATION_AVG:
+            event_set = event_set.annotate(Max('flag'), agg=Avg('value'))
+        elif aggregation == PredefinedGraph.AGGREGATION_SUM:
+            event_set = event_set.annotate(Max('flag'), agg=Sum('value'))
+        # Event is now a dict with keys agg, flag__max, year,
+        # month (if applicable, default 1), day (if
+        # applicable, default 1).
+        for event in event_set:
+            timestamp = datetime.datetime(
+                int(event['year']),
+                int(event.get('month', 1)),
+                int(event.get('day', 1)))
+            # Comments are lost
+            obj[timestamp] = (event['agg'] * multiplier,
+                              event['flag__max'], '')
+
+        if event is not None:
+            ## nice: we ran the loop at least once.
+            obj.location_id = series.location.id
+            obj.parameter_id = series.parameter.id
+            obj.time_step = series.timestep.id
+            obj.units = series.parameter.groupkey.unit
+            ## and add the TimeSeries to the result
+            result[(obj.location_id, obj.parameter_id)] = obj
+    return result
 
 
 class DateGridGraph(NensGraph):
@@ -128,27 +213,40 @@ class DateGridGraph(NensGraph):
             ls=layout.get('line-style', '-'),
             label=layout.get('label', 'horizontale lijn'))
 
-    def bar_from_single_ts(self, bar_status, single_ts, graph_item,
-                           default_color=None):
+    def bar_from_single_ts(self, single_ts, graph_item,
+                           default_color=None, bottom_ts=None):
         """
         Draw bars.
 
-        TODO: implement
-
         Graph_item can contain an attribute 'layout'.
+
+        Bottom_ts and single_ts MUST have the same timestamps. This
+        can be accomplished by: single_ts = single_ts + bottom_ts * 0
+        bottom_ts = bottom_ts + single_ts * 0
         """
 
-        # Make seconds from fews timesteps.
-        TIME_STEPS = {'SETS1440': 1440 * 60}
-
         dates, values, flag_dates, flag_values = dates_values(single_ts)
+
+        bottom = None
+        if bottom_ts:
+            bottom = dates_values(bottom_ts)
 
         if not values:
             return
 
-        TIME_STEPS
+        layout = graph_item.layout_dict()
+        color = layout.get('color', default_color)
+        color_outside = layout.get('color-outside', 'grey')
 
-        self.axes.bar(dates, values, edgecolor='grey', width=60, label='test')
+        title = '%s - %s (%s)' % (
+            single_ts.location_id, single_ts.parameter_id, single_ts.units)
+
+        style = {'color':color,
+                 'edgecolor':color_outside,
+                 'label':title}
+        if bottom:
+            style['bottom'] = bottom[1]  # 'values' of bottom
+        self.axes.bar(dates, values, **style)
 
 
 class TimeSeriesViewMixin(object):
@@ -260,33 +358,41 @@ class GraphView(View, TimeSeriesViewMixin):
         graph.axes.set_ymargin(0.1)
 
         color_index = 0
-        # bar_status is to keep track of the height of stacked bars.
-        bar_status = {}
+        ts_stacked_bar_sum = None
+        ts_stacked_line_sum = None
         for index, graph_item in enumerate(graph_items):
-            ts = graph_item.time_series(dt_start, dt_end)
             graph_type = graph_item.graph_type
 
             try:
                 if graph_type == GraphItem.GRAPH_TYPE_LINE:
-                    # Based on timeseries.
+                    ts = graph_item.time_series(dt_start, dt_end)
                     for (loc, par), single_ts in ts.items():
                         graph.line_from_single_ts(
                             single_ts, graph_item,
                             default_color=default_colors[color_index])
                         color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_HORIZONTAL_LINE:
-                    # Not based on timeseries.
                     graph.horizontal_line(
                         graph_item.value,
                         graph_item.layout_dict(),
                         default_color=default_colors[color_index])
                     color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR:
-                    # Based on timeseries.
+                    qs = graph_item.series()
+                    ts = time_series_aggregated(
+                        qs, dt_start, dt_end,
+                        aggregation=graph_settings['aggregation'],
+                        aggregation_period=graph_settings['aggregation-period'])
                     for (loc, par), single_ts in ts.items():
+                        # Make sure all timestamps are present.
+                        if ts_stacked_bar_sum is None:
+                            ts_stacked_bar_sum = single_ts * 0
+                        ts_stacked_bar_sum += single_ts * 0
                         bar_status = graph.bar_from_single_ts(
-                            bar_status, single_ts, graph_item,
-                            default_color=default_colors[color_index])
+                            single_ts, graph_item,
+                            default_color=default_colors[color_index],
+                            bottom_ts=ts_stacked_bar_sum)
+                        ts_stacked_bar_sum += single_ts
                         color_index = (color_index + 1) % len(default_colors)
             except:
                 # You never know if there is a bug somewhere
