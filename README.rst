@@ -69,7 +69,7 @@ A static vertical line that is not linked to a
 timeseries. An example application is to display 'today'.
 
 - type: vertical-line
-- value: xxx
+- value: 'today' or iso8601 date
 - label (optional)
 - layout (optional): color, line-width, line-style
 

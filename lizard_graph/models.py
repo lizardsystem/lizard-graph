@@ -113,6 +113,7 @@ class GraphLayout(models.Model):
     Options that are used depend on the graph type defined in the
     graph entry.
     """
+    description = models.TextField(null=True, blank=True)
     color = ColorField(null=True, blank=True, default='')
     color_outside = ColorField(null=True, blank=True, default='',
         help_text="For stacked-bar, stacked-line and stacked-line-cum")
@@ -122,9 +123,11 @@ class GraphLayout(models.Model):
     line_style = models.CharField(
         null=True, blank=True, max_length=10, default=None,
         help_text="For everything with lines")
+    label = models.CharField(max_length=80, blank=True, null=True)
 
     def __unicode__(self):
-        return 'GraphLayout %r %r %r %r' % (
+        return '%r %r %r %r %r' % (
+            self.description,
             self.color, self.color_outside, self.line_width, self.line_style)
 
     @classmethod
@@ -138,6 +141,8 @@ class GraphLayout(models.Model):
             layout.line_width = layout_dict['line-width']
         if 'line-style' in layout_dict:
             layout.line_style = layout_dict['line-style']
+        if 'label' in layout_dict:
+            layout.label = layout_dict['label']
         return layout
 
     def as_dict(self):
@@ -150,6 +155,8 @@ class GraphLayout(models.Model):
             result['line-width'] = self.line_width
         if self.line_style:
             result['line-style'] = self.line_style
+        if self.label:
+            result['label'] = self.label
         return result
 
 
@@ -242,7 +249,6 @@ class GraphItem(models.Model):
         if self.module is not None:
             series = series.filter(module__id=self.module.ident)
         return series
-
 
     def time_series(
         self, dt_start, dt_end, db_name=None):

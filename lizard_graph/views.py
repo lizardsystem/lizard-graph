@@ -143,6 +143,14 @@ class DateGridGraph(NensGraph):
 
     Inspired by lizard-map adapter.graph, but it is more generic.
     """
+    BAR_WIDTHS = {
+        PredefinedGraph.PERIOD_DAY: 1,
+        PredefinedGraph.PERIOD_MONTH: 30,
+        PredefinedGraph.PERIOD_QUARTER: 90,
+        PredefinedGraph.PERIOD_YEAR: 365,
+        }
+
+
     def __init__(self, **kwargs):
         super(DateGridGraph, self).__init__(**kwargs)
         self.axes = self.figure.add_subplot(111)
@@ -187,18 +195,25 @@ class DateGridGraph(NensGraph):
 
         Graph_item can contain an attribute 'layout'.
         """
-        title = '%s - %s (%s)' % (
-            single_ts.location_id, single_ts.parameter_id, single_ts.units)
-
         dates, values, flag_dates, flag_values = dates_values(single_ts)
         if not values:
             return
 
         layout = graph_item.layout_dict()
-        color = layout.get('color', default_color)
+
+        title = layout.get('label', '%s - %s (%s)' % (
+                single_ts.location_id, single_ts.parameter_id,
+                single_ts.units))
+        style = {
+            'label': title,
+            'color': layout.get('color', default_color),
+            'lw': layout.get('line-width', 2),
+            'ls': layout.get('line-style', '-'),
+            }
+
         # Line
-        self.axes.plot(dates, values, "-", color=color, lw=2, label=title)
-        # Flags
+        self.axes.plot(dates, values, **style)
+        # Flags: style is not customizable.
         self.axes.plot(flag_dates, flag_values, "o-", color='red',
                        label=title + ' flags')
 
@@ -206,14 +221,33 @@ class DateGridGraph(NensGraph):
         """
         Draw horizontal line.
         """
-        self.axes.axhline(
-            float(value),
-            color=layout.get('color', default_color),
-            lw=int(layout.get('line-width', 2)),
-            ls=layout.get('line-style', '-'),
-            label=layout.get('label', 'horizontale lijn'))
+        style = {
+            'ls': layout.get('line-style', '-'),
+            'lw': int(layout.get('line-width', 2)),
+            'color': layout.get('color', default_color),
+            }
+        if 'label' in layout:
+            style['label'] = layout['label']
+        self.axes.axhline(float(value), **style)
 
-    def bar_from_single_ts(self, single_ts, graph_item,
+    def vertical_line(self, value, layout, default_color=None):
+        """
+        Draw vertical line.
+        """
+        style = {
+            'ls': layout.get('line-style', '-'),
+            'lw': int(layout.get('line-width', 2)),
+            'color': layout.get('color', default_color),
+            }
+        if 'label' in layout:
+            style['label'] = layout['label']
+        try:
+            dt = iso8601.parse_date(value)
+        except iso8601.ParseError:
+            dt = datetime.datetime.now()
+        self.axes.axvline(dt, **style)
+
+    def bar_from_single_ts(self, single_ts, graph_item, bar_width,
                            default_color=None, bottom_ts=None):
         """
         Draw bars.
@@ -223,6 +257,8 @@ class DateGridGraph(NensGraph):
         Bottom_ts and single_ts MUST have the same timestamps. This
         can be accomplished by: single_ts = single_ts + bottom_ts * 0
         bottom_ts = bottom_ts + single_ts * 0
+
+        bar_width in days
         """
 
         dates, values, flag_dates, flag_values = dates_values(single_ts)
@@ -235,15 +271,14 @@ class DateGridGraph(NensGraph):
             return
 
         layout = graph_item.layout_dict()
-        color = layout.get('color', default_color)
-        color_outside = layout.get('color-outside', 'grey')
 
-        title = '%s - %s (%s)' % (
-            single_ts.location_id, single_ts.parameter_id, single_ts.units)
+        title = layout.get('label', '%s - %s (%s)' % (
+            single_ts.location_id, single_ts.parameter_id, single_ts.units))
 
-        style = {'color':color,
-                 'edgecolor':color_outside,
-                 'label':title}
+        style = {'color': layout.get('color', default_color),
+                 'edgecolor': layout.get('color-outside', 'grey'),
+                 'label': title,
+                 'width': bar_width}
         if bottom:
             style['bottom'] = bottom[1]  # 'values' of bottom
         self.axes.bar(dates, values, **style)
@@ -294,9 +329,9 @@ class GraphView(View, TimeSeriesViewMixin):
         """
         result = []
         graph_settings = {
-            'aggregation-period': PredefinedGraph.PERIOD_MONTH,
-            'aggregation': PredefinedGraph.AGGREGATION_SUM,
-            'reset-period': PredefinedGraph.PERIOD_MONTH,
+            'aggregation-period': 'month',
+            'aggregation': 'sum',
+            'reset-period': 'month',
             'width': 1200,
             'height': 500,
             }
@@ -356,10 +391,14 @@ class GraphView(View, TimeSeriesViewMixin):
             width=int(graph_settings['width']),
             height=int(graph_settings['height']))
         graph.axes.set_ymargin(0.1)
+        bar_width = DateGridGraph.BAR_WIDTHS[PredefinedGraph.PERIOD_REVERSE[
+            graph_settings['aggregation-period']]]
 
         color_index = 0
-        ts_stacked_bar_sum = None
-        ts_stacked_line_sum = None
+        ts_stacked_sum = {
+            'bar-positive': None,
+            'bar-negative': None,
+            'line': None}
         for index, graph_item in enumerate(graph_items):
             graph_type = graph_item.graph_type
 
@@ -377,22 +416,36 @@ class GraphView(View, TimeSeriesViewMixin):
                         graph_item.layout_dict(),
                         default_color=default_colors[color_index])
                     color_index = (color_index + 1) % len(default_colors)
+                elif graph_type == GraphItem.GRAPH_TYPE_VERTICAL_LINE:
+                    graph.vertical_line(
+                        graph_item.value,
+                        graph_item.layout_dict(),
+                        default_color=default_colors[color_index])
+                    color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR:
                     qs = graph_item.series()
                     ts = time_series_aggregated(
                         qs, dt_start, dt_end,
                         aggregation=graph_settings['aggregation'],
-                        aggregation_period=graph_settings['aggregation-period'])
+                        aggregation_period=graph_settings[
+                            'aggregation-period'])
+                    if graph_item.value == 'negative':
+                        stacked_key = 'bar-negative'
+                        polarity = -1
+                    else:
+                        stacked_key = 'bar-positive'
+                        polarity = 1
                     for (loc, par), single_ts in ts.items():
                         # Make sure all timestamps are present.
-                        if ts_stacked_bar_sum is None:
-                            ts_stacked_bar_sum = single_ts * 0
-                        ts_stacked_bar_sum += single_ts * 0
+                        if ts_stacked_sum[stacked_key] is None:
+                            ts_stacked_sum[stacked_key] = single_ts * 0
+                        ts_stacked_sum[stacked_key] += single_ts * 0
+                        abs_single_ts = polarity * abs(single_ts)
                         bar_status = graph.bar_from_single_ts(
-                            single_ts, graph_item,
+                            abs_single_ts, graph_item, bar_width,
                             default_color=default_colors[color_index],
-                            bottom_ts=ts_stacked_bar_sum)
-                        ts_stacked_bar_sum += single_ts
+                            bottom_ts=ts_stacked_sum[stacked_key])
+                        ts_stacked_sum[stacked_key] += abs_single_ts
                         color_index = (color_index + 1) % len(default_colors)
             except:
                 # You never know if there is a bug somewhere
