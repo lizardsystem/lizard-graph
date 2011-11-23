@@ -155,3 +155,38 @@ Shortcut to do the same::
     http://127.0.0.1:8000/graph/?dt_start=2011-02-11%2000:00:00&dt_end=2011-11-11%2000:00:00&graph=test&location=111.1&width=500&height=300
 
 And you can still use 'item' to add more stuff to your graph.
+
+
+Horizontal bar graph
+====================
+
+Horizontal bar graphs are different from other graphs. On the vertical
+axis each item has its own "row". Also, the vertical ticks display the
+item name.
+
+- dt_start
+- dt_end
+- width
+- height
+- item
+
+Item
+----
+
+Each item has:
+
+- label
+- location
+- parameter
+- module
+- goal: {year, value} (optional, multiple allowed)
+
+Predefined horizontal bar graph
+-------------------------------
+
+- slug
+- location (optional)
+
+Provide a slug and optionally a location.
+
+http://127.0.0.1:8000/graph/bar/?dt_start=2011-02-11%2000:00:00&dt_end=2011-11-11%2000:00:00&graph=test&location=111.1&width=500&height=300

@@ -193,7 +193,8 @@ class GraphItem(models.Model):
 
     location = models.ForeignKey(
         GeoLocationCache, null=True, blank=True,
-        help_text=('Optional even if fewsnorm is used, because location '
+        help_text=('Optional even if the data source fewsnorm is used, '
+                   'because location '
                    'can be provided last-minute. If filled in, it overrides '
                    'the provided location'))
     parameter = models.ForeignKey(
@@ -247,7 +248,7 @@ class GraphItem(models.Model):
         if self.parameter is not None:
             series = series.filter(parameter__id=self.parameter.ident)
         if self.module is not None:
-            series = series.filter(module__id=self.module.ident)
+            series = series.filter(moduleinstance__id=self.module.ident)
         return series
 
     def time_series(
@@ -355,3 +356,65 @@ class GraphItem(models.Model):
         if self.layout is not None:
             result['layout'] = self.layout.as_dict()
         return result
+
+
+class HorizontalBarGraph(models.Model):
+    """
+    Predefined horizontal bar graph.
+    """
+    name = models.CharField(max_length=80)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    title = models.CharField(
+        null=True, blank=True, max_length=80,
+        help_text="Last filled in is used in graph")
+    x_label = models.CharField(
+        null=True, blank=True, max_length=80,
+        help_text="Last filled in is used in graph")
+    y_label = models.CharField(
+        null=True, blank=True, max_length=80,
+        help_text="Last filled in is used in graph")
+
+    def __unicode__(self):
+        return '%s (%s)' % (self.name, self.slug)
+
+
+class HorizontalBarGraphGoal(models.Model):
+    """
+    Define a goal for a horizontal bar.
+    """
+    timestamp = models.DateTimeField()
+    value = models.FloatField()
+
+    def __unicode__(self):
+        '%s - %s' % (self.timestamp, self.value)
+
+
+class HorizontalBarGraphItem(models.Models):
+    """
+    Represent one row of a horizontal bar graph.
+    """
+    index = models.IntegerField(default=100)
+
+    label = models.CharField(
+        null=True, blank=True, max_length=80)
+
+    location = models.ForeignKey(
+        GeoLocationCache, null=True, blank=True,
+        help_text=('Optional even if the data source fewsnorm is used, '
+                   'because location '
+                   'can be provided last-minute. If filled in, it overrides '
+                   'the provided location'))
+    parameter = models.ForeignKey(
+        ParameterCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
+    module = models.ForeignKey(
+        ModuleCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
+
+    goals = models.ManyToManyField(
+        HorizontalBarGraphGoal, null=True, blank=True)
+
+    def __unicode__(self):
+        return '%s' % self.label

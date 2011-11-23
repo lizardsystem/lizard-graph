@@ -230,7 +230,8 @@ class DateGridGraph(NensGraph):
                 fancybox=True,
                 shadow=True,)
 
-    def line_from_single_ts(self, single_ts, graph_item, default_color=None):
+    def line_from_single_ts(self, single_ts, graph_item,
+                            default_color=None, flags=True):
         """
         Draw line(s) from a single timeseries.
 
@@ -257,8 +258,9 @@ class DateGridGraph(NensGraph):
         # Line
         self.axes.plot(dates, values, **style)
         # Flags: style is not customizable.
-        self.axes.plot(flag_dates, flag_values, "o-", color='red',
-                       label=title + ' flags')
+        if flags:
+            self.axes.plot(flag_dates, flag_values, "o-", color='red',
+                           label=title + ' flags')
 
     def horizontal_line(self, value, layout, default_color=None):
         """
@@ -359,9 +361,10 @@ class TimeSeriesViewMixin(object):
 
 class GraphView(View, TimeSeriesViewMixin):
     """
-    Draw standard line graph based on provided input.
+    Draw graph based on provided input.
 
-    See the README for details.
+    You can draw lines, bars, stacked bars/lines, etc. See the README
+    for details.
     """
 
     def _graph_items_from_request(self):
@@ -440,10 +443,10 @@ class GraphView(View, TimeSeriesViewMixin):
 
         color_index = 0
         ts_stacked_sum = {
-            'bar-positive': None,
-            'bar-negative': None,
-            'line-cum': None,
-            'line': None}
+            'bar-positive': 0,
+            'bar-negative': 0,
+            'line-cum': 0,
+            'line': 0}
         # Let's draw these graph items.
         for graph_item in graph_items:
             graph_type = graph_item.graph_type
@@ -461,7 +464,6 @@ class GraphView(View, TimeSeriesViewMixin):
                       graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
                     ts = graph_item.time_series(dt_start, dt_end)
                     for (loc, par), single_ts in ts.items():
-                        # TODO: make it work for non equidistant timeseries.
                         if (graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
                             current_ts = single_ts
                             stacked_key = 'line'
@@ -469,14 +471,15 @@ class GraphView(View, TimeSeriesViewMixin):
                             current_ts = time_series_cumulative(
                                 single_ts, graph_settings['reset-period'])
                             stacked_key = 'line-cum'
-                        if ts_stacked_sum[stacked_key] is None:
-                            ts_stacked_sum[stacked_key] = single_ts * 0
                         # cum_ts is bottom_ts + cumulative single_ts
-                        current_ts += ts_stacked_sum[stacked_key]
+                        # Make last observation carried forward
+                        current_ts.is_locf = True
+                        ts_stacked_sum[stacked_key] = (
+                            current_ts + ts_stacked_sum[stacked_key])
                         graph.line_from_single_ts(
-                            current_ts, graph_item,
-                            default_color=default_colors[color_index])
-                        ts_stacked_sum[stacked_key] = current_ts
+                            ts_stacked_sum[stacked_key], graph_item,
+                            default_color=default_colors[color_index],
+                            flags=False)
                         color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_HORIZONTAL_LINE:
                     graph.horizontal_line(
@@ -505,8 +508,6 @@ class GraphView(View, TimeSeriesViewMixin):
                         polarity = 1
                     for (loc, par), single_ts in ts.items():
                         # Make sure all timestamps are present.
-                        if ts_stacked_sum[stacked_key] is None:
-                            ts_stacked_sum[stacked_key] = single_ts * 0
                         ts_stacked_sum[stacked_key] += single_ts * 0
                         abs_single_ts = polarity * abs(single_ts)
                         bar_status = graph.bar_from_single_ts(
@@ -523,3 +524,132 @@ class GraphView(View, TimeSeriesViewMixin):
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
         return graph.png_response(
             response=HttpResponse(content_type='image/png'))
+
+
+class HorizontalBarView(View, TimeSeriesMixin):
+    """
+    Display horizontal bars
+    """
+    def get(self, request, *args, **kwargs):
+        width = int(request.GET('width', 1200))
+        height = int(request.GET('height', 500))
+
+
+
+
+
+def krw_score_graph(request, waterbody_slug):
+    """
+    Draws a krw score chart
+    """
+
+    waterbody = get_object_or_404(WaterBody, slug=waterbody_slug)
+
+    start_date, end_date = current_start_end_dates(request)
+    # we fit 50 scores in the graph
+    score_width = (date2num(end_date) - date2num(start_date)) / 50
+    width = request.GET.get('width', 1000)
+    height = request.GET.get('height', 400)
+    krw_graph = Graph(start_date, end_date, width, height)
+
+    # add specific graphics to krw_graph
+    scores = Score.objects.filter(start_date__gte=start_date,
+                                  start_date__lte=end_date,
+                                  waterbody=waterbody)
+
+    display_score = {
+        SCORE_CATEGORY_FYTO: [],
+        SCORE_CATEGORY_FLORA: [],
+        SCORE_CATEGORY_FAUNA: [],
+        SCORE_CATEGORY_VIS: [],
+        }  # Dict of lists
+    display_colors = {
+        SCORE_CATEGORY_FYTO: [],
+        SCORE_CATEGORY_FLORA: [],
+        SCORE_CATEGORY_FAUNA: [],
+        SCORE_CATEGORY_VIS: [],
+        }  # Dict of lists
+    for score in scores:
+        category = score.category
+        alpha_score = score.alpha_score
+        display_score[category].append(
+            (date2num(score.start_date), score_width))
+        display_colors[category].append(
+            alpha_score.color.html)
+
+    display_positions = {
+        SCORE_CATEGORY_FYTO: (27, 6),
+        SCORE_CATEGORY_FLORA: (17, 6),
+        SCORE_CATEGORY_FAUNA: (7, 6),
+        SCORE_CATEGORY_VIS: (-3, 6),
+        }
+    categories = [SCORE_CATEGORY_FYTO, SCORE_CATEGORY_FLORA,
+                  SCORE_CATEGORY_FAUNA, SCORE_CATEGORY_VIS]
+    for category in categories:
+        krw_graph.axes.broken_barh(display_score[category],
+                                   display_positions[category],
+                                   facecolors=display_colors[category],
+                                   edgecolors='grey')
+
+    # Y ticks.
+    krw_graph.axes.set_yticks([0, 10, 20, 30])
+    krw_graph.axes.set_yticklabels([
+            SCORE_CATEGORIES[SCORE_CATEGORY_VIS],
+            SCORE_CATEGORIES[SCORE_CATEGORY_FAUNA],
+            SCORE_CATEGORIES[SCORE_CATEGORY_FLORA],
+            SCORE_CATEGORIES[SCORE_CATEGORY_FYTO]])
+
+    krw_graph.axes.set_ylim(-5, 35)
+
+    # Legend
+    legend_handles = []
+    legend_labels = []
+    for alpha_score in AlphaScore.objects.all():
+        legend_handles.append(
+            Line2D([], [], color=alpha_score.color.html, lw=10))
+        legend_labels.append(alpha_score.name)
+    krw_graph.legend(legend_handles, legend_labels)
+    krw_graph.legend_space()
+
+    # Future
+    subplot_numbers = [312, 313]
+
+    goalscores = GoalScore.objects.filter(waterbody=waterbody)
+    # Collect goal score dates
+    goalscore_dates = {}
+    for goalscore in goalscores:
+        goalscore_dates[goalscore.start_date] = None
+    goalscore_dates_sorted = goalscore_dates.keys()
+    goalscore_dates_sorted.sort()
+
+    for goalscore_date_index, goalscore_date in enumerate(
+        goalscore_dates_sorted):
+
+        axes_future = krw_graph.figure.add_subplot(
+            subplot_numbers[goalscore_date_index])
+        axes_future.set_yticks([0, 10, 20, 30])
+        axes_future.set_yticklabels(['', '', '', ''])
+        axes_future.set_xticks([0.5, ])
+        goalscores = GoalScore.objects.filter(waterbody=waterbody,
+                                              start_date=goalscore_date)
+        axes_future.set_xticklabels([str(goalscores[0].start_date.year), ])
+        for goalscore in goalscores:  # Should be 4.
+            axes_future.broken_barh(
+                [(0, 1)],
+                display_positions[goalscore.category],
+                facecolors=goalscore.alpha_score.color.html,
+                edgecolors='grey')
+        axes_future.set_ylim(-5, 35)
+        axes_future.set_position((
+                (1 - krw_graph.legend_width + 0.015 +
+                 goalscore_date_index * 0.03),
+                krw_graph.bottom_axis_location,
+                0.015,
+                1 - 2 * krw_graph.bottom_axis_location))
+        axes_future.axvline(date2num(end_date), color='blue', lw=1, ls='--')
+        axes_future.set_xlim((0, 1))
+
+    # finish up
+    krw_graph.add_today()
+
+    return krw_graph.http_png()
