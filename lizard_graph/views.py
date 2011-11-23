@@ -16,6 +16,8 @@ from django.utils import simplejson as json
 
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
+from lizard_graph.models import HorizontalBarGraph
+from lizard_graph.models import HorizontalBarGraphItem
 
 from nens_graph.common import LessTicksAutoDateLocator
 from nens_graph.common import MultilineAutoDateFormatter
@@ -526,18 +528,38 @@ class GraphView(View, TimeSeriesViewMixin):
             response=HttpResponse(content_type='image/png'))
 
 
-class HorizontalBarView(View, TimeSeriesMixin):
+class HorizontalBarGraphView(View, TimeSeriesViewMixin):
     """
     Display horizontal bars
     """
     def get(self, request, *args, **kwargs):
-        width = int(request.GET('width', 1200))
-        height = int(request.GET('height', 500))
+        width = int(request.GET.get('width', 1200))
+        height = int(request.GET.get('height', 500))
+        dt_start, dt_end = self._dt_from_request()
+
+        graph_items = []
+        # Using the shortcut graph=<graph-slug>
+        hor_graph_slug = request.GET.get('graph', None)
+        if hor_graph_slug is not None:
+            # Add all graph items of graph to result
+            try:
+                hor_graph = HorizontalBarGraph.objects.get(
+                    slug=hor_graph_slug)
+                graph_items.extend(hor_graph.horizontalbargraph_set.all())
+            except HorizontalBarGraph.DoesNotExist:
+                logger.exception("Tried to fetch a non-existing hor.bar."
+                                 "graph %s" % hor_graph_slug)
+
+        graph = DateGridGraph(width=width, height=height)
+        graph.legend()
+        graph.axes.set_xlim(date2num((dt_start, dt_end)))
+        return graph.png_response(
+            response=HttpResponse(content_type='image/png'))
 
 
-
-
-
+"""
+Old krw score graph: afkijken
+"""
 def krw_score_graph(request, waterbody_slug):
     """
     Draws a krw score chart

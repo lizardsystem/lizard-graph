@@ -391,10 +391,11 @@ class HorizontalBarGraphGoal(models.Model):
         '%s - %s' % (self.timestamp, self.value)
 
 
-class HorizontalBarGraphItem(models.Models):
+class HorizontalBarGraphItem(models.Model):
     """
     Represent one row of a horizontal bar graph.
     """
+    horizontal_bar_graph = models.ForeignKey(HorizontalBarGraph)
     index = models.IntegerField(default=100)
 
     label = models.CharField(
@@ -418,3 +419,34 @@ class HorizontalBarGraphItem(models.Models):
 
     def __unicode__(self):
         return '%s' % self.label
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Return a HorizontalBarGraphItem matching the provided dictionary.
+
+        Note that the objects are not saved.
+
+        The provided dictionary must have the following keys:
+        - label: label that you want to show.
+        - location: fews location id
+        - parameter: fews parameter id
+        - module: fews module id
+        - goals (optional): list of {'timestamp':<datetime>,
+          'value':<floatvalue>}
+        """
+        try:
+            location = GeoLocationCache.objects.get(ident=d['location'])
+        except GeoLocationCache.DoesNotExist:
+            # TODO: see if "db_name" is provided, then add
+            # location anyway
+            location = GeoLocationCache(ident=d['location'])
+            logger.exception(
+                "Ignored not existing GeoLocationCache for ident=%s" %
+                d['location'])
+
+        graph_item = HorizotalBarGraphItem()
+        graph_item.location = location
+        graph_item.parameter = ParameterCache(ident=d['parameter'])
+        graph_item.module = ModuleCache(ident=d['module'])
+        graph_item.goals = []
