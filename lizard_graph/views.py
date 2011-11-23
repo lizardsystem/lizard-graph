@@ -23,6 +23,11 @@ from nens_graph.common import NensGraph
 
 from timeseries import timeseries
 
+from lizard_map.dateperiods import next_month
+from lizard_map.dateperiods import next_year
+from lizard_map.dateperiods import next_quarter
+from lizard_map.dateperiods import next_day
+
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +142,45 @@ def time_series_aggregated(qs, start, end,
     return result
 
 
+def time_series_cumulative(ts, reset_period):
+    def next_border(dt, reset_period):
+        reset_period = PredefinedGraph.PERIOD_REVERSE[reset_period]
+        if reset_period == PredefinedGraph.PERIOD_DAY:
+            next_start, next_end = next_day(dt)
+        elif reset_period == PredefinedGraph.PERIOD_MONTH:
+            next_start, next_end = next_month(dt)
+        elif reset_period == PredefinedGraph.PERIOD_QUARTER:
+            next_start, next_end = next_quarter(dt)
+        elif reset_period == PredefinedGraph.PERIOD_YEAR:
+            next_start, next_end = next_year(dt)
+        return next_start
+
+    result = ts.clone(with_events=True)
+
+    last_event = None
+    last_timestamp = None
+    reset_border = None
+    for timestamp, event in result.get_events():
+        new_event = list(event)
+        if reset_border is None:
+            # Initial
+            reset_border = next_border(timestamp, reset_period)
+        if (last_timestamp and
+            last_timestamp < reset_border and timestamp >= reset_border):
+            # We're crossing the reset-border.
+            reset_border = next_border(timestamp, reset_period)
+            last_event = None
+            last_timestamp = None
+        if last_event is not None:
+            new_event[0] += last_event[0]
+        event_tuple = tuple(new_event)
+        result[timestamp] = event_tuple
+        last_event = event_tuple
+        last_timestamp = timestamp
+
+    return result
+
+
 class DateGridGraph(NensGraph):
     """
     Standard graph with a grid and dates on the x-axis.
@@ -149,7 +193,6 @@ class DateGridGraph(NensGraph):
         PredefinedGraph.PERIOD_QUARTER: 90,
         PredefinedGraph.PERIOD_YEAR: 365,
         }
-
 
     def __init__(self, **kwargs):
         super(DateGridGraph, self).__init__(**kwargs)
@@ -276,7 +319,7 @@ class DateGridGraph(NensGraph):
             single_ts.location_id, single_ts.parameter_id, single_ts.units))
 
         style = {'color': layout.get('color', default_color),
-                 'edgecolor': layout.get('color-outside', 'grey'),
+                 'edgecolor': layout.get('color-outside', default_color),
                  'label': title,
                  'width': bar_width}
         if bottom:
@@ -386,6 +429,7 @@ class GraphView(View, TimeSeriesViewMixin):
         default_colors = ['green', 'blue', 'yellow', 'magenta', ]
 
         dt_start, dt_end = self._dt_from_request()
+        # Get all graph items from request.
         graph_items, graph_settings = self._graph_items_from_request()
         graph = DateGridGraph(
             width=int(graph_settings['width']),
@@ -398,8 +442,10 @@ class GraphView(View, TimeSeriesViewMixin):
         ts_stacked_sum = {
             'bar-positive': None,
             'bar-negative': None,
+            'line-cum': None,
             'line': None}
-        for index, graph_item in enumerate(graph_items):
+        # Let's draw these graph items.
+        for graph_item in graph_items:
             graph_type = graph_item.graph_type
 
             try:
@@ -409,6 +455,28 @@ class GraphView(View, TimeSeriesViewMixin):
                         graph.line_from_single_ts(
                             single_ts, graph_item,
                             default_color=default_colors[color_index])
+                        color_index = (color_index + 1) % len(default_colors)
+                elif (graph_type ==
+                      GraphItem.GRAPH_TYPE_STACKED_LINE_CUMULATIVE or
+                      graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
+                    ts = graph_item.time_series(dt_start, dt_end)
+                    for (loc, par), single_ts in ts.items():
+                        # TODO: make it work for non equidistant timeseries.
+                        if (graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
+                            current_ts = single_ts
+                            stacked_key = 'line'
+                        else:
+                            current_ts = time_series_cumulative(
+                                single_ts, graph_settings['reset-period'])
+                            stacked_key = 'line-cum'
+                        if ts_stacked_sum[stacked_key] is None:
+                            ts_stacked_sum[stacked_key] = single_ts * 0
+                        # cum_ts is bottom_ts + cumulative single_ts
+                        current_ts += ts_stacked_sum[stacked_key]
+                        graph.line_from_single_ts(
+                            current_ts, graph_item,
+                            default_color=default_colors[color_index])
+                        ts_stacked_sum[stacked_key] = current_ts
                         color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_HORIZONTAL_LINE:
                     graph.horizontal_line(

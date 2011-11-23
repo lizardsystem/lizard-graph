@@ -5,6 +5,9 @@ Changelog of lizard-graph
 0.1 (unreleased)
 ----------------
 
+- Implemented graph types LINE, LINE_CUMULATIVE, HORIZONTAL_LINE,
+  VERTICAL_LINE, STACKED_BAR.
+
 - Initial models for predefined graphs.
 
 - Initial working line graph, using timeseries, nens-graph and
