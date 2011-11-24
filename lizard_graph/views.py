@@ -69,7 +69,7 @@ def dates_values(timeseries):
 
 
 def time_series_aggregated(qs, start, end,
-                           aggregation, aggregation_period, polarization=None):
+                           aggregation, aggregation_period, polarity=None):
     """
     Aggregated time series. Based on TimeSeries._from_django_QuerySet.
 
@@ -84,13 +84,13 @@ def time_series_aggregated(qs, start, end,
 
         Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({'month': "date_part('month', datetime)", 'year': "date_part('year', datetime)", 'day': "date_part('day', datetime)"}).values('year', 'month', 'day').annotate(Sum('value'), Max('flag')).order_by('year', 'month', 'day')
     """
-    POLARIZATION = {'negative': -1}
+    POLARITIES = {'negative': -1}
 
     result = {}
     # Convert aggregation vars from strings to defined constants
     aggregation_period = PredefinedGraph.PERIOD_REVERSE[aggregation_period]
     aggregation = PredefinedGraph.AGGREGATION_REVERSE[aggregation]
-    multiplier = POLARIZATION.get(polarization, 1)
+    multiplier = POLARITIES.get(polarity, 1)
 
     for series in qs:
         obj = timeseries.TimeSeries()

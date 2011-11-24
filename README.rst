@@ -84,7 +84,7 @@ example application is a waterbalance.
 - type: stacked-bar
 - location
 - parameter
-- polarization (optional): positive (default), negative
+- polarity (optional): positive (default), negative
 - layout (optional): color, color-outside
 
 Global parameters (outside item):

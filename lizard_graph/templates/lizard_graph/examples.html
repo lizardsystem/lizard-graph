@@ -1,0 +1,36 @@
+{% extends 'lizard_ui/lizardbase.html' %}
+
+{% block content %}
+<div id="textual">
+test...
+
+<br/>
+
+{% url lizard_graph_horizontal_bar_graph_view %}?graph=test&dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300
+
+<img src="{% url lizard_graph_horizontal_bar_graph_view %}?graph=test&dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300">
+
+<br/>
+
+{% url lizard_graph_graph_view %}?graph=test&dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300
+
+<img src="{% url lizard_graph_graph_view %}?graph=test&dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300">
+
+<br/>
+
+{% url lizard_graph_graph_view %}?dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300&aggregation-period=day&aggregation=sum&item={%22type%22:%20%22stacked-bar%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-bar%22,%20%22location%22:%20%22111.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-bar%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22,%20%22polarity%22:%20%22negative%22}
+
+<img src="{% url lizard_graph_graph_view %}?dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300&aggregation-period=day&aggregation=sum&item={%22type%22:%20%22stacked-bar%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-bar%22,%20%22location%22:%20%22111.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-bar%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22,%20%22polarity%22:%20%22negative%22}">
+
+<br/>
+{% url lizard_graph_graph_view %}?dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300&aggregation-period=day&aggregation=sum&item={%22type%22:%20%22stacked-line%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line%22,%20%22location%22:%20%22111.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}
+
+<img src="{% url lizard_graph_graph_view %}?dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300&aggregation-period=day&aggregation=sum&item={%22type%22:%20%22stacked-line%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line%22,%20%22location%22:%20%22111.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}">
+
+<br/>
+{% url lizard_graph_graph_view %}?dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300&aggregation-period=day&aggregation=sum&item={%22type%22:%20%22stacked-line-cumulative%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line-cumulative%22,%20%22location%22:%20%22111.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line-cumulative%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}
+
+<img src="{% url lizard_graph_graph_view %}?dt_start=2011-03-05%2018:00:00&dt_end=2011-04-01%2000:00:00&width=900&height=300&aggregation-period=day&aggregation=sum&item={%22type%22:%20%22stacked-line-cumulative%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line-cumulative%22,%20%22location%22:%20%22111.1%22,%20%22parameter%22:%20%22ALMR110%22}&item={%22type%22:%20%22stacked-line-cumulative%22,%20%22location%22:%20%22110.1%22,%20%22parameter%22:%20%22ALMR110%22}">
+
+</div>
+{% endblock %}

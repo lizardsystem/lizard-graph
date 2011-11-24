@@ -1,0 +1,198 @@
+[
+  {
+    "pk": 1,
+    "model": "lizard_graph.predefinedgraph",
+    "fields": {
+      "aggregation_period": 1,
+      "description": "",
+      "title": "",
+      "x_label": "",
+      "y_label": "",
+      "aggregation": 2,
+      "y_range_max": null,
+      "y_range_min": null,
+      "reset_period": 1,
+      "slug": "test",
+      "name": "test"
+    }
+  },
+  {
+    "pk": 2,
+    "model": "lizard_graph.graphlayout",
+    "fields": {
+      "line_width": 3.0,
+      "description": "",
+      "color": "green",
+      "label": "grenswaarde",
+      "color_outside": "",
+      "line_style": "--"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "lizard_graph.graphlayout",
+    "fields": {
+      "line_width": null,
+      "description": "",
+      "color": "black",
+      "label": "",
+      "color_outside": "",
+      "line_style": ""
+    }
+  },
+  {
+    "pk": 1,
+    "model": "lizard_graph.graphlayout",
+    "fields": {
+      "line_width": null,
+      "description": "",
+      "color": "orange",
+      "label": "",
+      "color_outside": "",
+      "line_style": "--"
+    }
+  },
+  {
+    "pk": 9,
+    "model": "lizard_graph.graphitem",
+    "fields": {
+      "index": 90,
+      "layout": null,
+      "value": "",
+      "module": 6,
+      "location": 7493,
+      "graph_type": 5,
+      "predefined_graph": 1,
+      "parameter": 6
+    }
+  },
+  {
+    "pk": 11,
+    "model": "lizard_graph.graphitem",
+    "fields": {
+      "index": 95,
+      "layout": null,
+      "value": "",
+      "module": 6,
+      "location": 7750,
+      "graph_type": 5,
+      "predefined_graph": 1,
+      "parameter": 6
+    }
+  },
+  {
+    "pk": 13,
+    "model": "lizard_graph.graphitem",
+    "fields": {
+      "index": 100,
+      "layout": null,
+      "value": "",
+      "module": null,
+      "location": 7480,
+      "graph_type": 4,
+      "predefined_graph": 1,
+      "parameter": 4
+    }
+  },
+  {
+    "pk": 14,
+    "model": "lizard_graph.graphitem",
+    "fields": {
+      "index": 100,
+      "layout": null,
+      "value": "",
+      "module": null,
+      "location": 7649,
+      "graph_type": 4,
+      "predefined_graph": 1,
+      "parameter": 4
+    }
+  },
+  {
+    "pk": 15,
+    "model": "lizard_graph.graphitem",
+    "fields": {
+      "index": 100,
+      "layout": null,
+      "value": "",
+      "module": null,
+      "location": 7480,
+      "graph_type": 1,
+      "predefined_graph": 1,
+      "parameter": 4
+    }
+  },
+  {
+    "pk": 1,
+    "model": "lizard_graph.horizontalbargraph",
+    "fields": {
+      "description": "",
+      "title": "",
+      "x_label": "",
+      "y_label": "",
+      "slug": "test",
+      "name": "test"
+    }
+  },
+  {
+    "pk": 5,
+    "model": "lizard_graph.horizontalbargraphgoal",
+    "fields": {
+      "timestamp": "2015-11-24 14:33:09",
+      "value": 0.8
+    }
+  },
+  {
+    "pk": 6,
+    "model": "lizard_graph.horizontalbargraphgoal",
+    "fields": {
+      "timestamp": "2027-11-24 14:41:23",
+      "value": 0.9
+    }
+  },
+  {
+    "pk": 2,
+    "model": "lizard_graph.horizontalbargraphitem",
+    "fields": {
+      "index": 110,
+      "module": 6,
+      "label": "macrofauna",
+      "horizontal_bar_graph": 1,
+      "location": 7750,
+      "parameter": 6,
+      "goals": [
+        5
+      ]
+    }
+  },
+  {
+    "pk": 1,
+    "model": "lizard_graph.horizontalbargraphitem",
+    "fields": {
+      "index": 100,
+      "module": 6,
+      "label": "test krw score",
+      "horizontal_bar_graph": 1,
+      "location": 7493,
+      "parameter": 6,
+      "goals": [
+        5
+      ]
+    }
+  },
+  {
+    "pk": 3,
+    "model": "lizard_graph.horizontalbargraphitem",
+    "fields": {
+      "index": 100,
+      "module": null,
+      "label": "vis",
+      "horizontal_bar_graph": 1,
+      "location": 7480,
+      "parameter": 4,
+      "goals": [
+        6
+      ]
+    }
+  }
+]

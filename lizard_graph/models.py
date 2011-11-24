@@ -252,7 +252,7 @@ class GraphItem(GraphItemMixin):
     value = models.CharField(
         null=True, blank=True, max_length=40,
         help_text=('Numeric value for horizontal-line and vertical-line. '
-                   '"negative" for stacked-bar negative polarization. '
+                   '"negative" for stacked-bar negative polarity. '
                    'Slug of predefined graph in case of predefined-graph.'))
 
     layout = models.ForeignKey(
@@ -293,7 +293,7 @@ class GraphItem(GraphItemMixin):
         - location: fews location id
         - parameter: fews parameter id
         - module: fews module id
-        - polarization (will be mapped to value)
+        - polarity (will be mapped to value)
         - value: depends on type
         - layout: dict with optional keys color, color-inside,
           line-width, line-style
@@ -334,8 +334,8 @@ class GraphItem(GraphItemMixin):
         if 'module' in graph_item_dict:
             module = ModuleCache(ident=graph_item_dict['module'])
             graph_item.module = module
-        if 'polariaztion' in graph_item_dict:
-            graph_item.value = graph_item_dict['polarization']
+        if 'polarity' in graph_item_dict:
+            graph_item.value = graph_item_dict['polarity']
         if 'value' in graph_item_dict:
             graph_item.value = graph_item_dict['value']
         if 'layout' in graph_item_dict:

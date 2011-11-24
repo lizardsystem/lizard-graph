@@ -5,6 +5,12 @@ Changelog of lizard-graph
 0.1 (unreleased)
 ----------------
 
+- Added initial migrations.
+
+- Added test-fixture lizard_graph_test (requires fewsnorm test database).
+
+- Added examples under /graph/examples/.
+
 - Implemented bar graph, with models for predefined graphs.
 
 - Implemented graph types LINE, STACKED_LINE_CUMULATIVE, STACKED_LINE,
