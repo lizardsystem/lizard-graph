@@ -13,6 +13,19 @@ himself. The graph types that can be produced using this app are
 described in the parts below.
 
 
+Development installation
+========================
+
+- Buildout etc.
+- Load the test fewsnorm database.
+- Make a fewsnorm source.
+- Run bin/django sync_fewsnorm on that fewsnorm source. Now the
+  GeoLocationCache is filled.
+- Run bin/django loaddata lizard_graph_test. It loads a fixture
+  corresponding to the test database.
+- Run the dev server and go to: /<lizard_graph>/examples/
+
+
 Graphs
 ======
 
