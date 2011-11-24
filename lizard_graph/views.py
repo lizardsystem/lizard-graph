@@ -5,6 +5,7 @@ import datetime
 import iso8601
 import logging
 from matplotlib.dates import date2num
+from sets import Set
 
 from django.db.models import Avg
 from django.db.models import Min
@@ -528,10 +529,26 @@ class GraphView(View, TimeSeriesViewMixin):
             response=HttpResponse(content_type='image/png'))
 
 
+def value_to_html_color(value):
+    """
+    Simple classifier for colors. All values will return a color.
+    """
+    if value < 0.2:
+        return '#ff0000'
+    if value < 0.4:
+        return '#ffaa00'
+    if value < 0.6:
+        return '#ffff00'
+    if value < 0.8:
+        return '#00ff00'
+    return '#0000ff'
+
+
 class HorizontalBarGraphView(View, TimeSeriesViewMixin):
     """
     Display horizontal bars
     """
+
     def get(self, request, *args, **kwargs):
         width = int(request.GET.get('width', 1200))
         height = int(request.GET.get('height', 500))
@@ -545,14 +562,99 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
             try:
                 hor_graph = HorizontalBarGraph.objects.get(
                     slug=hor_graph_slug)
-                graph_items.extend(hor_graph.horizontalbargraph_set.all())
+                graph_items.extend(hor_graph.horizontalbargraphitem_set.all())
             except HorizontalBarGraph.DoesNotExist:
                 logger.exception("Tried to fetch a non-existing hor.bar."
                                  "graph %s" % hor_graph_slug)
 
         graph = DateGridGraph(width=width, height=height)
-        graph.legend()
+
+        yticklabels = []
+        block_width = (date2num(dt_end) - date2num(dt_start)) / 50
+        collected_goal_timestamps = Set()
+
+        for index, graph_item in enumerate(graph_items):
+            yticklabels.append(graph_item.label)
+            # We want to draw a shadow past the end of the last
+            # event. That's why we ignore dt_start.
+            ts = graph_item.time_series(dt_end=dt_end)
+            if len(ts) != 1:
+                logger.warn('Warning: drawing %d timeseries on a single bar '
+                            'HorizontalBarView', len(ts))
+            # We assume there is only one timeseries.
+            for (loc, par), single_ts in ts.items():
+                dates, values, flag_dates, flag_values = dates_values(
+                    single_ts)
+                if not dates:
+                    logger.warning('Tried to draw empty timeseries %s %s',
+                                   loc, par)
+                    continue
+                block_dates = []
+                block_dates_shadow = []
+                for date_index in range(len(dates) - 1):
+                    dist_to_next = (date2num(dates[date_index + 1]) -
+                                    date2num(dates[date_index]))
+                    this_block_width = min(block_width, dist_to_next)
+
+                    block_dates.append(
+                        (date2num(dates[date_index]), this_block_width))
+                    block_dates_shadow.append(
+                        (date2num(dates[date_index]), dist_to_next))
+
+                block_dates.append(
+                    (date2num(dates[-1]), block_width))
+                # Ignoring tzinfo, otherwise we can't compare.
+                last_date = max(dt_start.replace(tzinfo=None), dates[-1])
+                block_dates_shadow.append(
+                    (date2num(last_date),
+                     (date2num(dt_end) - date2num(dt_start))))
+
+                block_colors = [value_to_html_color(value)
+                                for value in values]
+
+                # Block shadow
+                graph.axes.broken_barh(
+                    block_dates_shadow, (index - 0.2, 0.4),
+                    facecolors=block_colors, edgecolors=block_colors,
+                    alpha=0.2)
+                # The 'real' block
+                graph.axes.broken_barh(
+                    block_dates, (index - 0.4, 0.8),
+                    facecolors=block_colors, edgecolors='grey')
+
+            for goal in graph_item.goals.all():
+                collected_goal_timestamps.update([goal.timestamp, ])
+
+        # For each unique bar goal timestamp, generate a mini
+        # graph. Ordered by timestamp.
+        goal_timestamps = list(collected_goal_timestamps)
+        goal_timestamps.sort()
+        subplot_numbers = [312, 313]
+        for index, goal_timestamp in enumerate(goal_timestamps[:2]):
+            axes_goal = graph.figure.add_subplot(subplot_numbers[index])
+            axes_goal.set_yticks(range(len(yticklabels)))
+            axes_goal.set_yticklabels('')
+            axes_goal.set_xticks([0, ])
+            axes_goal.set_xticklabels([goal_timestamp.year, ])
+            for graph_item_index, graph_item in enumerate(graph_items):
+                # 0 or 1 items
+                goals = graph_item.goals.filter(timestamp=goal_timestamp)
+                for goal in goals:
+                    axes_goal.broken_barh(
+                        [(-0.5, 1)], (graph_item_index - 0.4, 0.8),
+                        facecolors=value_to_html_color(goal.value),
+                        edgecolors='grey')
+            axes_goal.set_xlim((-0.5, 0.5))
+            axes_goal.set_ylim(-0.5, len(yticklabels) - 0.5)
+            axes_goal.set_position((0.915 + index * 0.03,
+                                    0.1, 0.015, 0.8))
+
+        # TODO: legend
+        #graph.legend()
+        graph.axes.set_yticks(range(len(yticklabels)))
+        graph.axes.set_yticklabels(yticklabels)
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
+        graph.axes.set_ylim(-0.5, len(yticklabels) - 0.5)
         return graph.png_response(
             response=HttpResponse(content_type='image/png'))
 

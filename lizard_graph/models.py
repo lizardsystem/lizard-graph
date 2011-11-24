@@ -160,7 +160,65 @@ class GraphLayout(models.Model):
         return result
 
 
-class GraphItem(models.Model):
+class GraphItemMixin(models.Model):
+    """
+    About location, parameter and modules and fetching timeseries.
+    """
+    location = models.ForeignKey(
+        GeoLocationCache, null=True, blank=True,
+        help_text=('Optional even if the data source fewsnorm is used, '
+                   'because location '
+                   'can be provided last-minute. If filled in, it overrides '
+                   'the provided location'))
+    parameter = models.ForeignKey(
+        ParameterCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
+    module = models.ForeignKey(
+        ModuleCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
+
+    class Meta:
+        abstract = True
+
+    @property
+    def fews_norm_db_name(self):
+        if self.location and self.location.fews_norm_source:
+            return self.location.fews_norm_source.database_name
+        else:
+            return None
+
+    def series(self, db_name=None):
+        if db_name is None:
+            db_name = self.fews_norm_db_name
+        if not db_name:
+            return {}
+
+        series = Series.objects.using(db_name).all()
+        if self.location is not None:
+            series = series.filter(location__id=self.location.ident)
+        if self.parameter is not None:
+            series = series.filter(parameter__id=self.parameter.ident)
+        if self.module is not None:
+            series = series.filter(moduleinstance__id=self.module.ident)
+        return series
+
+    def time_series(
+        self, dt_start=None, dt_end=None, db_name=None):
+        """
+        Return dictionary of timeseries.
+
+        Keys are (location, parameter), value is timeseries object.
+        """
+        # if not self._require_fewsnorm():
+        #     return {}
+
+        series = self.series(db_name=db_name)
+        ts = timeseries.TimeSeries.as_dict(
+            series, dt_start, dt_end)
+        return ts
+
+
+class GraphItem(GraphItemMixin):
     """
     A single item for a graph - a line, bar or whatever.
     """
@@ -191,19 +249,6 @@ class GraphItem(models.Model):
     graph_type = models.IntegerField(
         choices=GRAPH_TYPE_CHOICES, default=GRAPH_TYPE_LINE)
 
-    location = models.ForeignKey(
-        GeoLocationCache, null=True, blank=True,
-        help_text=('Optional even if the data source fewsnorm is used, '
-                   'because location '
-                   'can be provided last-minute. If filled in, it overrides '
-                   'the provided location'))
-    parameter = models.ForeignKey(
-        ParameterCache, null=True, blank=True,
-        help_text='For all types that require a fewsnorm source')
-    module = models.ForeignKey(
-        ModuleCache, null=True, blank=True,
-        help_text='For all types that require a fewsnorm source')
-
     value = models.CharField(
         null=True, blank=True, max_length=40,
         help_text=('Numeric value for horizontal-line and vertical-line. '
@@ -221,13 +266,6 @@ class GraphItem(models.Model):
             self.predefined_graph,
             GraphItem.GRAPH_TYPES[self.graph_type], self.index)
 
-    @property
-    def fews_norm_db_name(self):
-        if self.location and self.location.fews_norm_source:
-            return self.location.fews_norm_source.database_name
-        else:
-            return None
-
     def _require_fewsnorm(self):
         return self.graph_type in [
             GraphItem.GRAPH_TYPE_LINE,
@@ -235,36 +273,6 @@ class GraphItem(models.Model):
             GraphItem.GRAPH_TYPE_STACKED_LINE,
             GraphItem.GRAPH_TYPE_STACKED_LINE_CUMULATIVE,
             ]
-
-    def series(self, db_name=None):
-        if db_name is None:
-            db_name = self.fews_norm_db_name
-        if not db_name:
-            return {}
-
-        series = Series.objects.using(db_name).all()
-        if self.location is not None:
-            series = series.filter(location__id=self.location.ident)
-        if self.parameter is not None:
-            series = series.filter(parameter__id=self.parameter.ident)
-        if self.module is not None:
-            series = series.filter(moduleinstance__id=self.module.ident)
-        return series
-
-    def time_series(
-        self, dt_start, dt_end, db_name=None):
-        """
-        Return dictionary of timeseries.
-
-        Keys are (location, parameter), value is timeseries object.
-        """
-        if not self._require_fewsnorm():
-            return {}
-
-        series = self.series(db_name=db_name)
-        ts = timeseries.TimeSeries.as_dict(
-            series, dt_start, dt_end)
-        return ts
 
     def layout_dict(self):
         if self.layout:
@@ -387,11 +395,14 @@ class HorizontalBarGraphGoal(models.Model):
     timestamp = models.DateTimeField()
     value = models.FloatField()
 
+    class Meta:
+        ordering = ('timestamp', 'value', )
+
     def __unicode__(self):
-        '%s - %s' % (self.timestamp, self.value)
+        return '%s - %s' % (self.timestamp, self.value)
 
 
-class HorizontalBarGraphItem(models.Model):
+class HorizontalBarGraphItem(GraphItemMixin):
     """
     Represent one row of a horizontal bar graph.
     """
@@ -401,21 +412,13 @@ class HorizontalBarGraphItem(models.Model):
     label = models.CharField(
         null=True, blank=True, max_length=80)
 
-    location = models.ForeignKey(
-        GeoLocationCache, null=True, blank=True,
-        help_text=('Optional even if the data source fewsnorm is used, '
-                   'because location '
-                   'can be provided last-minute. If filled in, it overrides '
-                   'the provided location'))
-    parameter = models.ForeignKey(
-        ParameterCache, null=True, blank=True,
-        help_text='For all types that require a fewsnorm source')
-    module = models.ForeignKey(
-        ModuleCache, null=True, blank=True,
-        help_text='For all types that require a fewsnorm source')
-
     goals = models.ManyToManyField(
         HorizontalBarGraphGoal, null=True, blank=True)
+
+    class Meta:
+        # Graphs are drawn on y values in increasing order. The lowest
+        # bar is drawn first.
+        ordering = ('-index', )
 
     def __unicode__(self):
         return '%s' % self.label
