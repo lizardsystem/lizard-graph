@@ -5,6 +5,7 @@ import datetime
 import iso8601
 import logging
 from matplotlib.dates import date2num
+from matplotlib.lines import Line2D
 from sets import Set
 
 from django.db.models import Avg
@@ -213,7 +214,8 @@ class DateGridGraph(NensGraph):
         """
         Add a legend to a graph.
         """
-        handles, labels = self.axes.get_legend_handles_labels()
+        if not handles or not labels:
+            handles, labels = self.axes.get_legend_handles_labels()
 
         if handles and labels:
             nitems = len(handles)
@@ -649,8 +651,18 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
             axes_goal.set_position((0.915 + index * 0.03,
                                     0.1, 0.015, 0.8))
 
-        # TODO: legend
-        #graph.legend()
+        # Legend
+        legend_handles = [
+            Line2D([], [], color=value_to_html_color(0.8), lw=10),
+            Line2D([], [], color=value_to_html_color(0.6), lw=10),
+            Line2D([], [], color=value_to_html_color(0.4), lw=10),
+            Line2D([], [], color=value_to_html_color(0.2), lw=10),
+            Line2D([], [], color=value_to_html_color(0.0), lw=10),
+            ]
+        legend_labels = [
+            'Zeer goed', 'Goed', 'Matig', 'Ontoereikend', 'Slecht']
+        graph.legend(legend_handles, legend_labels)
+
         graph.axes.set_yticks(range(len(yticklabels)))
         graph.axes.set_yticklabels(yticklabels)
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
