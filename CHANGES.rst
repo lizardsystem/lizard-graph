@@ -2,8 +2,8 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.2 (unreleased)
-----------------
+0.1.1 (2011-11-28)
+------------------
 
 - Removed default GraphLayout.line_width ''.
 
