@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.1 (unreleased)
+0.1 (2011-11-28)
 ----------------
 
 - Added initial migrations.
