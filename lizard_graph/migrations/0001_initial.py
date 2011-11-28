@@ -31,7 +31,7 @@ class Migration(SchemaMigration):
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
             ('color', self.gf('lizard_map.models.ColorField')(default='', max_length=8, null=True, blank=True)),
             ('color_outside', self.gf('lizard_map.models.ColorField')(default='', max_length=8, null=True, blank=True)),
-            ('line_width', self.gf('django.db.models.fields.FloatField')(default='', null=True, blank=True)),
+            ('line_width', self.gf('django.db.models.fields.FloatField')(null=True, blank=True)),
             ('line_style', self.gf('django.db.models.fields.CharField')(default=None, max_length=10, null=True, blank=True)),
             ('label', self.gf('django.db.models.fields.CharField')(max_length=80, null=True, blank=True)),
         ))
@@ -231,7 +231,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'label': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True', 'blank': 'True'}),
             'line_style': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '10', 'null': 'True', 'blank': 'True'}),
-            'line_width': ('django.db.models.fields.FloatField', [], {'default': "''", 'null': 'True', 'blank': 'True'})
+            'line_width': ('django.db.models.fields.FloatField', [], {'null': 'True', 'blank': 'True'})
         },
         'lizard_graph.horizontalbargraph': {
             'Meta': {'object_name': 'HorizontalBarGraph'},

@@ -118,7 +118,7 @@ class GraphLayout(models.Model):
     color_outside = ColorField(null=True, blank=True, default='',
         help_text="For stacked-bar, stacked-line and stacked-line-cum")
     line_width = models.FloatField(
-        null=True, blank=True, default='',
+        null=True, blank=True,
         help_text="For everything with lines")
     line_style = models.CharField(
         null=True, blank=True, max_length=10, default=None,

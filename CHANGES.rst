@@ -5,7 +5,12 @@ Changelog of lizard-graph
 0.2 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Removed default GraphLayout.line_width ''.
+
+- Created new initial migration.
+
+Note: If you have old lizard_graph tables, it's best to remove them
+first.
 
 
 0.1 (2011-11-28)
