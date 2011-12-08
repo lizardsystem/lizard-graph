@@ -25,6 +25,12 @@ Development installation
   corresponding to the test database.
 - Run the dev server and go to: /<lizard_graph>/examples/
 
+How to dump the data
+--------------------
+
+It is important to include fewsnorm data as well::
+
+    >>> bin/django dumpdata lizard_graph lizard_fewsnorm.GeoLocationCache --indent=2 >lizard_graph.json
 
 Graphs
 ======
