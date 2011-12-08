@@ -149,10 +149,37 @@ The parameters that can be provided:
 - type: predefined-graph
 - graph: slug of your predefined graph
 - location (optional, depends on configuration)
+- locations (optional, see below)
 
 Predefined graphs are described with django models without
-location_id. The assumption here is that the same location_id can be
+location. The assumption here is that the same location can be
 applied to all parameters that occur in a single graph.
+
+Locations: dictionary with keyword items as keys. Overrides parameter
+location and GraphItem.location. For example:
+
+location=naam3
+locations={%22loc1%22:%22naam1%22,%22loc2%22:%22naam2%22}
+
+This means:
+- loc1 = naam1
+- loc2 = naam2
+- default location = naam3
+
+To be effective, this requires GraphItems with location_wildcard with
+something like:
+
+"%loc1%_1234" -> this becomes "naam1_1234" and will be filled in as
+location_id
+
+"%loc3%_asdf" -> loc3 does not exist in the input, so for this
+GraphItem it will take the predefined location.
+
+"" -> nothing is filled in in location_wildcard, so for this GraphItem
+it will also take the predefined location.
+
+If the predefined location is not filled in, the default location
+"naam3" will be used.
 
 
 Shortcut for predefined graphs

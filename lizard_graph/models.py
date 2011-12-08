@@ -158,6 +158,12 @@ class GraphItemMixin(models.Model):
     """
     About location, parameter and modules and fetching timeseries.
     """
+    # TODO: location_wildcard. See readme.
+    # location_wildcard = models.CharField(
+    #     max_length=200, null=True, blank=True,
+    #     help_text=('If left empty, take location. If filled in and combined '
+    #                'with the url parameter \'locations\', this field '
+    #                'overrides the location field.'))
     location = models.ForeignKey(
         GeoLocationCache, null=True, blank=True,
         help_text=('Optional even if the data source fewsnorm is used, '

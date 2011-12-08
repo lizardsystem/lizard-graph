@@ -8,6 +8,8 @@ Changelog of lizard-graph
 - Changed model GraphLayout to an abstract class GraphLayoutMixin. The
   fields are now directly in GraphItem.
 
+- Added url parameter 'location' when using option 'graph'.
+
 
 0.1.1 (2011-11-28)
 ------------------

@@ -67,7 +67,8 @@ class GraphViewTest(TestCase):
         # Make 2 dummy items
         pg.graphitem_set.create()
         pg.graphitem_set.create()
-        result, graph_settings = self.graph_items_from_request('graph=test')
+        result, graph_settings = self.graph_items_from_request(
+            'graph=test')
 
         self.assertEquals(len(result), 2)
         for graph_item in result:
@@ -88,7 +89,8 @@ class GraphViewTest(TestCase):
             value='test',
             )
 
-        result, graph_settings = self.graph_items_from_request('graph=test2')
+        result, graph_settings = self.graph_items_from_request(
+            'graph=test2')
 
         # 2 results: the graph item from pg2 is "unfolded" in graph
         # items from pg.
@@ -97,6 +99,7 @@ class GraphViewTest(TestCase):
         self.assertEquals(len(result), 2)
 
     def test_graph_items_from_request3(self):
+        """default aggregation period"""
         result, graph_settings = self.graph_items_from_request(
             'item={"type":"line","location":"111.1","parameter":"ALM",'
             '"layout":{"color":"red"}}')
@@ -105,7 +108,7 @@ class GraphViewTest(TestCase):
         self.assertEquals(graph_settings['aggregation-period'],
                           'month')
 
-    def test_graph_items_from_request3(self):
+    def test_graph_items_from_request4(self):
         result, graph_settings = self.graph_items_from_request(
             'item={"type":"line","location":"111.1","parameter":"ALM",'
             '"layout":{"color":"red"}}&aggregation-period=year&'
@@ -115,6 +118,23 @@ class GraphViewTest(TestCase):
         self.assertEquals(graph_settings['aggregation-period'], 'year')
         self.assertEquals(graph_settings['aggregation'], 'avg')
         self.assertEquals(graph_settings['reset-period'], 'day')
+
+    def test_graph_items_from_request5(self):
+        """
+        Add custom location to graph_item.
+        """
+        pg = PredefinedGraph(name='test', slug='test')
+        pg.save()
+        # Make dummy item, no location defined
+        pg.graphitem_set.create(graph_type=GraphItem.GRAPH_TYPE_LINE)
+
+        result, graph_settings = self.graph_items_from_request(
+            'graph=test&location=111.1')
+
+        self.assertEquals(len(result), 1)
+        for graph_item in result:
+            self.assertTrue(isinstance(graph_item, GraphItem))
+            self.assertEquals(graph_item.location.ident, '111.1')
 
 
 class GraphLayoutMixinTest(TestCase):

@@ -32,6 +32,8 @@ from lizard_map.dateperiods import next_year
 from lizard_map.dateperiods import next_quarter
 from lizard_map.dateperiods import next_day
 
+from lizard_fewsnorm.models import GeoLocationCache
+
 
 logger = logging.getLogger(__name__)
 
@@ -326,7 +328,7 @@ class DateGridGraph(NensGraph):
             single_ts.location_id, single_ts.parameter_id, single_ts.units))
 
         style = {'color': layout.get('color', default_color),
-                 'edgecolor': layout.get('color-outside', default_color),
+                 'edgecolor': layout.get('color-outside', 'grey'),
                  'label': title,
                  'width': bar_width}
         if bottom:
@@ -392,11 +394,24 @@ class GraphView(View, TimeSeriesViewMixin):
         predefined_graph_slug = get.get('graph', None)
         if predefined_graph_slug is not None:
             # Add all graph items of graph to result
+            location_get = get.get('location', None)
+            if location_get is not None:
+                # If multiple instances, just take one.
+                try:
+                    location_get = GeoLocationCache.objects.filter(
+                        ident=location_get)[0]
+                except IndexError:
+                    # Beware: read-only.
+                    logger.exception(
+                        ('Tried to fetch a non-existing GeoLocationCache '
+                         'object %s') % location_get)
+                    location_get = GeoLocationCache(ident=location_get)
             try:
                 predefined_graph = PredefinedGraph.objects.get(
                     slug=predefined_graph_slug)
                 graph_settings.update(predefined_graph.graph_settings())
-                result.extend(predefined_graph.unfolded_graph_items())
+                result.extend(predefined_graph.unfolded_graph_items(
+                        location=location_get))
             except PredefinedGraph.DoesNotExist:
                 logger.exception("Tried to fetch a non-existing predefined "
                                  "graph %s" % predefined_graph_slug)
@@ -556,6 +571,17 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
         height = int(request.GET.get('height', 500))
         dt_start, dt_end = self._dt_from_request()
 
+        location = request.GET.get('location', None)
+        if location is not None:
+            try:
+                location = GeoLocationCache.objects.filter(ident=location)[0]
+            except IndexError:
+                logger.exception(
+                    ("Tried to fetch a non existing "
+                     "GeoLocationCache %s, created dummy one") %
+                    location)
+                location = GeoLocationCache(ident=location)
+
         graph_items = []
         # Using the shortcut graph=<graph-slug>
         hor_graph_slug = request.GET.get('graph', None)
@@ -577,6 +603,8 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
 
         for index, graph_item in enumerate(graph_items):
             yticklabels.append(graph_item.label)
+            if not graph_item.location:
+                graph_item.location = location
             # We want to draw a shadow past the end of the last
             # event. That's why we ignore dt_start.
             ts = graph_item.time_series(dt_end=dt_end)
