@@ -106,14 +106,13 @@ class PredefinedGraph(models.Model):
         return result
 
 
-class GraphLayout(models.Model):
+class GraphLayoutMixin(models.Model):
     """
     Layout that can be applied to a graph entry.
 
     Options that are used depend on the graph type defined in the
     graph entry.
     """
-    description = models.TextField(null=True, blank=True)
     color = ColorField(null=True, blank=True, default='')
     color_outside = ColorField(null=True, blank=True, default='',
         help_text="For stacked-bar, stacked-line and stacked-line-cum")
@@ -125,27 +124,22 @@ class GraphLayout(models.Model):
         help_text="For everything with lines")
     label = models.CharField(max_length=80, blank=True, null=True)
 
-    def __unicode__(self):
-        return '%r %r %r %r %r' % (
-            self.description,
-            self.color, self.color_outside, self.line_width, self.line_style)
+    class Meta:
+        abstract = True
 
-    @classmethod
-    def from_dict(cls, layout_dict):
-        layout = GraphLayout()
+    def apply_layout_dict(self, layout_dict):
         if 'color' in layout_dict:
-            layout.color = layout_dict['color']
+            self.color = layout_dict['color']
         if 'color-outside' in layout_dict:
-            layout.color_outside = layout_dict['color-outside']
+            self.color_outside = layout_dict['color-outside']
         if 'line-width' in layout_dict:
-            layout.line_width = layout_dict['line-width']
+            self.line_width = layout_dict['line-width']
         if 'line-style' in layout_dict:
-            layout.line_style = layout_dict['line-style']
+            self.line_style = layout_dict['line-style']
         if 'label' in layout_dict:
-            layout.label = layout_dict['label']
-        return layout
+            self.label = layout_dict['label']
 
-    def as_dict(self):
+    def layout_as_dict(self):
         result = {}
         if self.color:
             result['color'] = self.color
@@ -218,7 +212,7 @@ class GraphItemMixin(models.Model):
         return ts
 
 
-class GraphItem(GraphItemMixin):
+class GraphItem(GraphItemMixin, GraphLayoutMixin):
     """
     A single item for a graph - a line, bar or whatever.
     """
@@ -255,9 +249,6 @@ class GraphItem(GraphItemMixin):
                    '"negative" for stacked-bar negative polarity. '
                    'Slug of predefined graph in case of predefined-graph.'))
 
-    layout = models.ForeignKey(
-        GraphLayout, blank=True, null=True, default=None)
-
     class Meta:
         ordering = ('index', )
 
@@ -275,10 +266,7 @@ class GraphItem(GraphItemMixin):
             ]
 
     def layout_dict(self):
-        if self.layout:
-            return self.layout.as_dict()
-        else:
-            return {}
+        return self.layout_as_dict()
 
     @classmethod
     def from_dict(cls, graph_item_dict):
@@ -340,7 +328,7 @@ class GraphItem(GraphItemMixin):
             graph_item.value = graph_item_dict['value']
         if 'layout' in graph_item_dict:
             layout_dict = graph_item_dict['layout']
-            graph_item.layout = GraphLayout.from_dict(layout_dict)
+            graph_item.apply_layout_dict(layout_dict)
 
         return [graph_item, ]
 
@@ -352,6 +340,7 @@ class GraphItem(GraphItemMixin):
         """
         result = {
             'type': GraphItem.GRAPH_TYPES[self.graph_type],
+            'layout': self.layout_as_dict(),
             }
         if self.location is not None:
             result['location'] = self.location.ident
@@ -361,8 +350,6 @@ class GraphItem(GraphItemMixin):
             result['module'] = self.module.ident
         if self.value is not None:
             result['value'] = self.value
-        if self.layout is not None:
-            result['layout'] = self.layout.as_dict()
         return result
 
 

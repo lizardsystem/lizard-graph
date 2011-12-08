@@ -10,7 +10,7 @@ from lizard_graph.views import GraphView
 
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
-from lizard_graph.models import GraphLayout
+from lizard_graph.models import GraphLayoutMixin
 
 
 class TimeSeriesViewMixinTest(TestCase):
@@ -117,35 +117,38 @@ class GraphViewTest(TestCase):
         self.assertEquals(graph_settings['reset-period'], 'day')
 
 
-class GraphLayoutTest(TestCase):
+class GraphLayoutMixinTest(TestCase):
     def test_from_dict(self):
         layout_dict = {
             'color': 'ff0000',
             'color-outside': '00ff00',
             'line-width': 3,
             'line-style': '-o'}
-        graph_layout = GraphLayout.from_dict(layout_dict)
-        self.assertEquals(graph_layout.color, 'ff0000')
-        self.assertEquals(graph_layout.color_outside, '00ff00')
-        self.assertEquals(graph_layout.line_width, 3)
-        self.assertEquals(graph_layout.line_style, '-o')
-        self.assertEquals(graph_layout.as_dict(), layout_dict)
+        graph_item = GraphItem()
+        graph_item.apply_layout_dict(layout_dict)
+        self.assertEquals(graph_item.color, 'ff0000')
+        self.assertEquals(graph_item.color_outside, '00ff00')
+        self.assertEquals(graph_item.line_width, 3)
+        self.assertEquals(graph_item.line_style, '-o')
+        self.assertEquals(graph_item.layout_as_dict(), layout_dict)
 
     def test_from_dict2(self):
         layout_dict = {
             'color': 'ff0000',
             'line-width': 2}
-        graph_layout = GraphLayout.from_dict(layout_dict)
-        self.assertEquals(graph_layout.color, 'ff0000')
-        self.assertEquals(graph_layout.color_outside, '')
-        self.assertEquals(graph_layout.line_width, 2)
-        self.assertEquals(graph_layout.line_style, None)
-        self.assertEquals(graph_layout.as_dict(), layout_dict)
+        graph_item = GraphItem()
+        graph_item.apply_layout_dict(layout_dict)
+        self.assertEquals(graph_item.color, 'ff0000')
+        self.assertEquals(graph_item.color_outside, '')
+        self.assertEquals(graph_item.line_width, 2)
+        self.assertEquals(graph_item.line_style, None)
+        self.assertEquals(graph_item.layout_as_dict(), layout_dict)
 
 
 class GraphItemTest(TestCase):
     def test_from_dict(self):
         graph_item_dict = {
+            'layout': {},
             'type': 'line',
             }
         graph_items = GraphItem.from_dict(graph_item_dict)
@@ -156,6 +159,7 @@ class GraphItemTest(TestCase):
 
     def test_from_dict2(self):
         graph_item_dict = {
+            'layout': {},
             'type': 'line',
             'location': 'fews-location-id',
             'parameter': 'fews-parameter-id',
@@ -190,7 +194,7 @@ class GraphItemTest(TestCase):
         self.assertEquals(
             graph_items[0].value, 'blabla')
         self.assertEquals(
-            graph_items[0].layout.as_dict(), layout_dict)
+            graph_items[0].layout_as_dict(), layout_dict)
         self.assertEquals(graph_items[0].as_dict(), graph_item_dict)
 
     def test_from_dict_predefined_graph(self):

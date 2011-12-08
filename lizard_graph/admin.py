@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from lizard_graph.models import GraphItem
-from lizard_graph.models import GraphLayout
 from lizard_graph.models import PredefinedGraph
 
 from lizard_graph.models import HorizontalBarGraph
@@ -28,7 +27,6 @@ class HorizontalBarGraphAdmin(admin.ModelAdmin):
 
 
 admin.site.register(GraphItem)
-admin.site.register(GraphLayout)
 admin.site.register(PredefinedGraph, PredefinedGraphAdmin)
 
 admin.site.register(HorizontalBarGraph, HorizontalBarGraphAdmin)

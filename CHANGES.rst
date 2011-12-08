@@ -5,7 +5,8 @@ Changelog of lizard-graph
 0.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Changed model GraphLayout to an abstract class GraphLayoutMixin. The
+  fields are now directly in GraphItem.
 
 
 0.1.1 (2011-11-28)
