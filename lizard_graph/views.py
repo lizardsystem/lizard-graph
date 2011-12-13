@@ -212,7 +212,7 @@ class DateGridGraph(NensGraph):
             major_locator, self.axes)
         self.axes.xaxis.set_major_formatter(major_formatter)
 
-    def legend(self, handles=None, labels=None):
+    def legend(self, handles=None, labels=None, legend_location=0):
         """
         Add a legend to a graph.
         """
@@ -230,8 +230,8 @@ class DateGridGraph(NensGraph):
             self.legend_obj = self.axes.legend(
                 handles,
                 labels,
-                bbox_to_anchor=(0., 0., 1., 0.),
-                loc='lower right',
+                #bbox_to_anchor=(0., 0., 1., 0.),
+                loc=legend_location,
                 ncol=ncol,
                 borderaxespad=0.,
                 fancybox=True,
@@ -387,6 +387,7 @@ class GraphView(View, TimeSeriesViewMixin):
             'reset-period': 'month',
             'width': 1200,
             'height': 500,
+            'legend-location': 0,
             }
         get = self.request.GET
 
@@ -428,10 +429,18 @@ class GraphView(View, TimeSeriesViewMixin):
         graph_parameters = [
             'title', 'x-label', 'y-label', 'y-range-min', 'y-range-max',
             'aggregation', 'aggregation-period', 'reset-period', 'width',
-            'height']
+            'height', 'legend-location']
         for graph_parameter in graph_parameters:
             if graph_parameter in get:
                 graph_settings[graph_parameter] = get[graph_parameter]
+
+        # legend-location can be a numeric value (3), or it can be
+        # text ("lower left").
+        try:
+            graph_settings['legend-location'] = int(
+                graph_settings['legend-location'])
+        except ValueError:
+            pass
 
         return result, graph_settings
 
@@ -540,7 +549,7 @@ class GraphView(View, TimeSeriesViewMixin):
                 # You never know if there is a bug somewhere
                 logger.exception("Unknown error while drawing graph item.")
 
-        graph.legend()
+        graph.legend(legend_location=graph_settings['legend-location'])
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
         return graph.png_response(
             response=HttpResponse(content_type='image/png'))

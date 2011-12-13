@@ -41,6 +41,21 @@ class PredefinedGraph(models.Model):
     AGGREGATION = dict(AGGREGATION_CHOICES)
     AGGREGATION_REVERSE = dict([(b, a) for a, b in AGGREGATION_CHOICES])
 
+    # Matplotlib locations for legend
+    LEGEND_LOCATION_CHOICES = (
+        (0, 'best'),
+        (1, 'upper right'),
+        (2, 'upper left'),
+        (3, 'lower left'),
+        (4, 'lower right'),
+        (5, 'right'),
+        (6, 'center left'),
+        (7, 'center right'),
+        (8, 'lower center'),
+        (9, 'upper center'),
+        (10, 'center'),
+        )
+
     name = models.CharField(max_length=40)
     slug = models.SlugField(unique=True)
     description = models.TextField(null=True, blank=True)
@@ -58,6 +73,9 @@ class PredefinedGraph(models.Model):
                                     help_text='Y range min')
     y_range_max = models.FloatField(null=True, blank=True,
                                     help_text='Y range max')
+    legend_location = models.IntegerField(
+        choices=LEGEND_LOCATION_CHOICES, null=True, blank=True)
+
     aggregation = models.IntegerField(
         null=True, blank=True, choices=AGGREGATION_CHOICES,
         help_text='Required for stacked-bar')
@@ -96,6 +114,9 @@ class PredefinedGraph(models.Model):
             result['y-label'] = self.y_label
         if self.y_range_min:
             result['y-range-min'] = self.y_range_min
+        if self.legend_location is not None:
+            result['legend-location'] = self.legend_location
+
         if self.aggregation:
             result['aggregation'] = PredefinedGraph.AGGREGATION[self.aggregation]
         if self.aggregation_period:
