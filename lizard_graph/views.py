@@ -468,7 +468,6 @@ class GraphView(View, TimeSeriesViewMixin):
             height=int(graph_settings['height']))
         if ('y-range-min' not in graph_settings and
             'y-range-max' not in graph_settings):
-            print graph_settings
             graph.axes.set_ymargin(0.1)
 
         bar_width = DateGridGraph.BAR_WIDTHS[PredefinedGraph.PERIOD_REVERSE[
