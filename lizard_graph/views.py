@@ -466,7 +466,11 @@ class GraphView(View, TimeSeriesViewMixin):
         graph = DateGridGraph(
             width=int(graph_settings['width']),
             height=int(graph_settings['height']))
-        graph.axes.set_ymargin(0.1)
+        if ('y-range-min' not in graph_settings and
+            'y-range-max' not in graph_settings):
+            print graph_settings
+            graph.axes.set_ymargin(0.1)
+
         bar_width = DateGridGraph.BAR_WIDTHS[PredefinedGraph.PERIOD_REVERSE[
             graph_settings['aggregation-period']]]
 
@@ -551,6 +555,12 @@ class GraphView(View, TimeSeriesViewMixin):
 
         graph.legend(legend_location=graph_settings['legend-location'])
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
+
+        # Set ylim
+        y_min = graph_settings.get('y-range-min', graph.axes.get_ylim()[0])
+        y_max = graph_settings.get('y-range-max', graph.axes.get_ylim()[1])
+        graph.axes.set_ylim(y_min, y_max)
+
         return graph.png_response(
             response=HttpResponse(content_type='image/png'))
 

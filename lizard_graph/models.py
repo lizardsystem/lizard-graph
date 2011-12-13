@@ -112,8 +112,10 @@ class PredefinedGraph(models.Model):
             result['x-label'] = self.x_label
         if self.y_label:
             result['y-label'] = self.y_label
-        if self.y_range_min:
+        if self.y_range_min is not None:
             result['y-range-min'] = self.y_range_min
+        if self.y_range_max is not None:
+            result['y-range-max'] = self.y_range_max
         if self.legend_location is not None:
             result['legend-location'] = self.legend_location
 
