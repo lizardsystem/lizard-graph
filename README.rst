@@ -28,6 +28,7 @@ Development installation
 How to dump the data
 --------------------
 
+TODO implement the natural keys-way for this.
 It is important to include fewsnorm data as well::
 
     >>> bin/django dumpdata lizard_graph lizard_fewsnorm.GeoLocationCache --indent=2 >lizard_graph.json
