@@ -5,7 +5,9 @@ Changelog of lizard-graph
 0.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Implemented options y-range-min and y-range-max of predefined graph.
+
+- Added option for legend-location.
 
 
 0.2 (2011-12-08)
