@@ -28,9 +28,26 @@ Development installation
 How to dump the data
 --------------------
 
-It is important to include fewsnorm data as well::
+Dump the data using natural keys. References are auto generated on
+target machines and pk's do not match.
 
-    >>> bin/django dumpdata lizard_graph lizard_fewsnorm.GeoLocationCache --indent=2 >lizard_graph.json
+    >>> bin/django dumpdata lizard_graph --indent=2 --natural >lizard_graph.json
+
+You can also dump a sub part only::
+
+    >>> bin/django dumpdata lizard_graph.graphitem --indent=2 --natural >lizard_graph.json
+
+Predefined graphs are referenced by natural keys as well.
+
+How to load data
+----------------
+
+Make sure the target machine has lizard_fewsnorm 0.8 or higher, or the
+natural keys will not work (in that case, you need to sync
+lizard_fewsnorm as well with your source database).
+
+    >>> bin/django loaddata lizard_graph.json
+
 
 Graphs
 ======
@@ -162,6 +179,8 @@ Predefined graphs are described with django models without
 location. The assumption here is that the same location can be
 applied to all parameters that occur in a single graph.
 
+TODO
+----
 Locations: dictionary with keyword items as keys. Overrides parameter
 location and GraphItem.location. For example:
 
