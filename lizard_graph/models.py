@@ -15,10 +15,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class PredefinedGraphManager(models.Manager):
+    def get_by_natural_key(self, slug):
+        return self.get(slug=slug)
+
+
 class PredefinedGraph(models.Model):
     """
     Predefined graph. Graph entries must point to a predefined graph.
     """
+    objects = PredefinedGraphManager()
+
     PERIOD_DAY = 1
     PERIOD_MONTH = 2
     PERIOD_QUARTER = 3
@@ -128,6 +135,9 @@ class PredefinedGraph(models.Model):
         if self.reset_period:
             result['reset-period'] = PredefinedGraph.PERIOD[self.reset_period]
         return result
+
+    def natural_key(self):
+        return (self.slug, )
 
 
 class GraphLayoutMixin(models.Model):
