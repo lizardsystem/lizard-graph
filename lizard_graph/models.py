@@ -43,6 +43,7 @@ class PredefinedGraph(models.Model):
 
     # Matplotlib locations for legend
     LEGEND_LOCATION_CHOICES = (
+        (-1, 'no legend'),
         (0, 'best'),
         (1, 'upper right'),
         (2, 'upper left'),

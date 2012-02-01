@@ -552,7 +552,9 @@ class GraphView(View, TimeSeriesViewMixin):
                 # You never know if there is a bug somewhere
                 logger.exception("Unknown error while drawing graph item.")
 
-        graph.legend(legend_location=graph_settings['legend-location'])
+        if not graph_settings['legend-location'] == -1:
+            graph.legend(legend_location=graph_settings['legend-location'])
+
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
 
         # Set ylim
