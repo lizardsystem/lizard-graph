@@ -311,7 +311,6 @@ class DateGridGraph(NensGraph):
                 # In pixels
                 self.margin_right_extra += 210
                 legend_x = 1 + float(self.margin_right_extra) / graph_width()
-                print legend_x
                 bbox_to_anchor = (legend_x, 0., 0., 1.)
             else:
                 # default
