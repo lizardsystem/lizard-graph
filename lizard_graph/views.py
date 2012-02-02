@@ -850,8 +850,6 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
             axes_goal.set_ylim(-0.5, len(yticklabels) - 0.5)
 
             # Coordinates are related to the graph size - not graph 311
-            # axes_goal.set_position((0.915 + index * 0.03,
-            #                         0.1, 0.015, 0.8))
             bar_width_px = 12
             axes_x = float(graph.width -
                            (graph.MARGIN_RIGHT + graph.margin_right_extra) +

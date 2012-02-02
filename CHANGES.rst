@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.3 (unreleased)
+0.3 (2012-02-02)
 ----------------
 
 - Improved legend locations.
