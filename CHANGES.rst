@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.3 (unreleased)
 ----------------
 
+- Added absolute margins around graph.
+
 - Added natural key for predefined graph.
 
 - Implemented options y-range-min and y-range-max of predefined graph.

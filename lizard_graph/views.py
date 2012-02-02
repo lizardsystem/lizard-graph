@@ -200,9 +200,27 @@ class DateGridGraph(NensGraph):
         PredefinedGraph.PERIOD_YEAR: 365,
         }
 
+    MARGIN_TOP = 8
+    MARGIN_BOTTOM = 24
+    MARGIN_LEFT = 100
+    MARGIN_RIGHT = 24
+
     def __init__(self, **kwargs):
         super(DateGridGraph, self).__init__(**kwargs)
+
+        # Calculate surrounding space. We want it to be a constant
+        # number of pixels. Safety check first.
+        if (self.width > self.MARGIN_LEFT + self.MARGIN_RIGHT and
+            self.height > self.MARGIN_TOP + self.MARGIN_BOTTOM):
+
+            self.figure.subplots_adjust(
+                bottom=float(self.MARGIN_BOTTOM)/self.height,
+                top=float(self.height-self.MARGIN_TOP)/self.height,
+                left=float(self.MARGIN_LEFT)/self.width,
+                right=float(self.width-self.MARGIN_RIGHT)/self.width)
+
         self.axes = self.figure.add_subplot(111)
+        #self.axes.set_ymargin(0.2)
         self.axes.grid(True)
 
         major_locator = LessTicksAutoDateLocator()
