@@ -339,7 +339,7 @@ class DateGridGraph(NensGraph):
                 shadow=True,)
 
     def line_from_single_ts(self, single_ts, graph_item,
-                            default_color=None, flags=True):
+                            default_color=None, flags=False):
         """
         Draw line(s) from a single timeseries.
 
@@ -520,7 +520,8 @@ class GraphView(View, TimeSeriesViewMixin):
             'reset-period': 'month',
             'width': 1200,
             'height': 500,
-            'legend-location': 0,
+            'legend-location': -1,
+            'flags': False,
             }
         get = self.request.GET
 
@@ -562,7 +563,7 @@ class GraphView(View, TimeSeriesViewMixin):
         graph_parameters = [
             'title', 'x-label', 'y-label', 'y-range-min', 'y-range-max',
             'aggregation', 'aggregation-period', 'reset-period', 'width',
-            'height', 'legend-location']
+            'height', 'legend-location', 'flags', ]
         for graph_parameter in graph_parameters:
             if graph_parameter in get:
                 graph_settings[graph_parameter] = get[graph_parameter]
@@ -622,7 +623,8 @@ class GraphView(View, TimeSeriesViewMixin):
                     for (loc, par), single_ts in ts.items():
                         graph.line_from_single_ts(
                             single_ts, graph_item,
-                            default_color=default_colors[color_index])
+                            default_color=default_colors[color_index],
+                            flags=graph_settings['flags'])
                         color_index = (color_index + 1) % len(default_colors)
                 elif (graph_type ==
                       GraphItem.GRAPH_TYPE_STACKED_LINE_CUMULATIVE or

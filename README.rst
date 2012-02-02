@@ -173,7 +173,19 @@ The parameters that can be provided:
 - graph: slug of your predefined graph
 - location (optional, depends on configuration)
 - locations (optional, see below)
-- legend-location: 0..10 (see matplotlib docs)
+
+- title
+- x-label
+- y-label
+- y-range-min
+- y-range-max
+- legend-location: 0..10 (see matplotlib docs) or -1 to turn it off
+- aggregation-period: month
+- aggregation: sum
+- reset-period
+- width: 1200
+- height: 500
+- flags: False
 
 Predefined graphs are described with django models without
 location. The assumption here is that the same location can be
