@@ -4,6 +4,7 @@
 import datetime
 import iso8601
 import logging
+import math
 from matplotlib.dates import date2num
 from matplotlib.lines import Line2D
 from sets import Set
@@ -192,6 +193,12 @@ class DateGridGraph(NensGraph):
     Standard graph with a grid and dates on the x-axis.
 
     Inspired by lizard-map adapter.graph, but it is more generic.
+
+    Note: margin_extra_xx is defined, it looks like you can just stack
+    stuff. But don't do that - for each item the total-final-height of
+    _every_ component is needed to calculate the exact location in
+    pixels. So if you wanna stack something, you need to recalculate
+    all coordinates of components.
     """
     BAR_WIDTHS = {
         PredefinedGraph.PERIOD_DAY: 1,
@@ -229,6 +236,7 @@ class DateGridGraph(NensGraph):
         self.margin_bottom_extra = 0
         self.margin_left_extra = 0
         self.margin_right_extra = 0
+
         major_formatter = MultilineAutoDateFormatter(
             major_locator, self.axes)
         self.axes.xaxis.set_major_formatter(major_formatter)
@@ -249,6 +257,28 @@ class DateGridGraph(NensGraph):
         'upper center' 	9
         'center' 	10
         """
+        def graph_width():
+            """
+            Return the current width in pixels.
+
+            This width is considered '1' in the matplotlib coordinate system.
+            """
+            width = self.width - (
+                self.MARGIN_LEFT + self.margin_left_extra +
+                self.MARGIN_RIGHT + self.margin_right_extra)
+            return max(width, 100)
+
+        def graph_height():
+            """
+            Return the current height in pixels.
+
+            This height is considered '1' in the matplotlib coordinate system.
+            """
+            height = self.height - (
+                self.MARGIN_TOP + self.margin_top_extra +
+                self.MARGIN_BOTTOM + self.margin_bottom_extra)
+            return max(height, 100)
+
         if not handles or not labels:
             handles, labels = self.axes.get_legend_handles_labels()
 
@@ -256,34 +286,32 @@ class DateGridGraph(NensGraph):
             nitems = len(handles)
             if legend_location in [5, 6, 7]:
                 ncol = 1
+                legend_lines = nitems
             else:
                 ncol = min(nitems, 2)
                 # What comes next is an educated guess on the amount of
                 # characters that can be used without collisions in the legend.
                 ntrunc = int((self.width / ncol - 24) / 10)
                 labels = [l[0:ntrunc] for l in labels]
+                legend_lines = int(math.ceil(float(nitems) / ncol))
 
             if legend_location in [3, 4, 8]:
-                legend_height = 50  # In pixels
-                # 'Stack' it below
-                legend_below_graph = -float(legend_height +
-                                            self.margin_bottom_extra +
-                                            self.MARGIN_BOTTOM) / self.height
-                self.margin_bottom_extra += legend_height
+                # 11 is margin for legend, 10 is line height, 6 is extra
+                # In pixels
+                self.margin_bottom_extra += legend_lines * 10 + 11 + 6
+                legend_y = -float(self.margin_bottom_extra -
+                                  3 +  # 3 is for bottom space
+                                  self.MARGIN_BOTTOM) / graph_height()
                 # quite stupid, but the coordinate system changes when you
                 # use set_position. So the graph is on the negative side.
 
                 # x, y, width, height
-                bbox_to_anchor = (0., legend_below_graph, 1., 0.)
+                bbox_to_anchor = (0., legend_y, 1., 0.)
             elif legend_location in [5, 7]:
-                legend_width = 210  # In pixels
-                legend_x = float(legend_width + 5 +  # 5 is the offset
-                                 self.MARGIN_RIGHT +
-                                 self.margin_right_extra +
-                                 self.MARGIN_LEFT +
-                                 self.margin_left_extra +
-                                 self.width) / self.width
-                self.margin_right_extra += legend_width
+                # In pixels
+                self.margin_right_extra += 210
+                legend_x = 1 + float(self.margin_right_extra) / graph_width()
+                print legend_x
                 bbox_to_anchor = (legend_x, 0., 0., 1.)
             else:
                 # default
