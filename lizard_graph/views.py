@@ -222,7 +222,7 @@ class DateGridGraph(NensGraph):
     MARGIN_TOP = 8
     MARGIN_BOTTOM = 24
     MARGIN_LEFT = 96
-    MARGIN_RIGHT = 24
+    MARGIN_RIGHT = 54
 
     def __init__(self, **kwargs):
         super(DateGridGraph, self).__init__(**kwargs)
@@ -262,7 +262,7 @@ class DateGridGraph(NensGraph):
         width = self.width - (
             self.MARGIN_LEFT + self.margin_left_extra +
             self.MARGIN_RIGHT + self.margin_right_extra)
-        return max(width, 100)
+        return max(width, 1)
 
     def graph_height(self):
         """
@@ -273,7 +273,7 @@ class DateGridGraph(NensGraph):
         height = self.height - (
             self.MARGIN_TOP + self.margin_top_extra +
             self.MARGIN_BOTTOM + self.margin_bottom_extra)
-        return max(height, 100)
+        return max(height, 1)
 
     def legend(self, handles=None, labels=None, legend_location=0):
         """
@@ -757,17 +757,17 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
 
         graph = DateGridGraph(width=width, height=height)
 
-        # Legend. Must do this before using graph location calculations
-        legend_handles = [
-            Line2D([], [], color=value_to_html_color(0.8), lw=10),
-            Line2D([], [], color=value_to_html_color(0.6), lw=10),
-            Line2D([], [], color=value_to_html_color(0.4), lw=10),
-            Line2D([], [], color=value_to_html_color(0.2), lw=10),
-            Line2D([], [], color=value_to_html_color(0.0), lw=10),
-            ]
-        legend_labels = [
-            'Zeer goed', 'Goed', 'Matig', 'Ontoereikend', 'Slecht']
-        graph.legend(legend_handles, legend_labels, legend_location=5)
+        # # Legend. Must do this before using graph location calculations
+        # legend_handles = [
+        #     Line2D([], [], color=value_to_html_color(0.8), lw=10),
+        #     Line2D([], [], color=value_to_html_color(0.6), lw=10),
+        #     Line2D([], [], color=value_to_html_color(0.4), lw=10),
+        #     Line2D([], [], color=value_to_html_color(0.2), lw=10),
+        #     Line2D([], [], color=value_to_html_color(0.0), lw=10),
+        #     ]
+        # legend_labels = [
+        #     'Zeer goed', 'Goed', 'Matig', 'Ontoereikend', 'Slecht']
+        # graph.legend(legend_handles, legend_labels, legend_location=6)
 
         yticklabels = []
         block_width = (date2num(dt_end) - date2num(dt_start)) / 50
@@ -852,12 +852,16 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
             # Coordinates are related to the graph size - not graph 311
             # axes_goal.set_position((0.915 + index * 0.03,
             #                         0.1, 0.015, 0.8))
-            axes_x = float(graph.width - (graph.MARGIN_RIGHT + graph.margin_right_extra)) / graph.width + index * 0.03 + 0.015
+            bar_width_px = 12
+            axes_x = float(graph.width -
+                           (graph.MARGIN_RIGHT + graph.margin_right_extra) +
+                           bar_width_px +
+                           2 * bar_width_px * index
+                           ) / graph.width
             axes_y = float(graph.MARGIN_BOTTOM +
                       graph.margin_bottom_extra) / graph.height
-            axes_width = 0.015
+            axes_width = float(bar_width_px) / graph.width
             axes_height = float(graph.graph_height()) / graph.height
-            print axes_x
             axes_goal.set_position((axes_x, axes_y,
                                     axes_width, axes_height))
 
