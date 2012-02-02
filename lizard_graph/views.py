@@ -202,30 +202,33 @@ class DateGridGraph(NensGraph):
 
     MARGIN_TOP = 8
     MARGIN_BOTTOM = 24
-    MARGIN_LEFT = 100
+    MARGIN_LEFT = 48
     MARGIN_RIGHT = 24
 
     def __init__(self, **kwargs):
         super(DateGridGraph, self).__init__(**kwargs)
 
-        # Calculate surrounding space. We want it to be a constant
-        # number of pixels. Safety check first.
-        if (self.width > self.MARGIN_LEFT + self.MARGIN_RIGHT and
-            self.height > self.MARGIN_TOP + self.MARGIN_BOTTOM):
+        # # Calculate surrounding space. We want it to be a constant
+        # # number of pixels. Safety check first.
+        # if (self.width > self.MARGIN_LEFT + self.MARGIN_RIGHT and
+        #     self.height > self.MARGIN_TOP + self.MARGIN_BOTTOM):
 
-            self.figure.subplots_adjust(
-                bottom=float(self.MARGIN_BOTTOM)/self.height,
-                top=float(self.height-self.MARGIN_TOP)/self.height,
-                left=float(self.MARGIN_LEFT)/self.width,
-                right=float(self.width-self.MARGIN_RIGHT)/self.width)
+        #     self.figure.subplots_adjust(
+        #         bottom=float(self.MARGIN_BOTTOM)/self.height,
+        #         top=float(self.height-self.MARGIN_TOP)/self.height,
+        #         left=float(self.MARGIN_LEFT)/self.width,
+        #         right=float(self.width-self.MARGIN_RIGHT)/self.width)
 
         self.axes = self.figure.add_subplot(111)
-        #self.axes.set_ymargin(0.2)
         self.axes.grid(True)
 
         major_locator = LessTicksAutoDateLocator()
         self.axes.xaxis.set_major_locator(major_locator)
 
+        self.margin_top_extra = 0
+        self.margin_bottom_extra = 0
+        self.margin_left_extra = 0
+        self.margin_right_extra = 0
         major_formatter = MultilineAutoDateFormatter(
             major_locator, self.axes)
         self.axes.xaxis.set_major_formatter(major_formatter)
@@ -233,22 +236,63 @@ class DateGridGraph(NensGraph):
     def legend(self, handles=None, labels=None, legend_location=0):
         """
         Add a legend to a graph.
+
+        'best' 	0
+        'upper right' 	1
+        'upper left' 	2
+        'lower left' 	3
+        'lower right' 	4
+        'right' 	5
+        'center left' 	6
+        'center right' 	7
+        'lower center' 	8
+        'upper center' 	9
+        'center' 	10
         """
         if not handles or not labels:
             handles, labels = self.axes.get_legend_handles_labels()
 
         if handles and labels:
             nitems = len(handles)
-            ncol = min(nitems, 2)
-            # What comes next is an educated guess on the amount of
-            # characters that can be used without collisions in the legend.
-            ntrunc = int((self.width / ncol - 24) / 10)
+            if legend_location in [5, 6, 7]:
+                ncol = 1
+            else:
+                ncol = min(nitems, 2)
+                # What comes next is an educated guess on the amount of
+                # characters that can be used without collisions in the legend.
+                ntrunc = int((self.width / ncol - 24) / 10)
+                labels = [l[0:ntrunc] for l in labels]
 
-            labels = [l[0:ntrunc] for l in labels]
+            if legend_location in [3, 4, 8]:
+                legend_height = 50  # In pixels
+                # 'Stack' it below
+                legend_below_graph = -float(legend_height +
+                                            self.margin_bottom_extra +
+                                            self.MARGIN_BOTTOM) / self.height
+                self.margin_bottom_extra += legend_height
+                # quite stupid, but the coordinate system changes when you
+                # use set_position. So the graph is on the negative side.
+
+                # x, y, width, height
+                bbox_to_anchor = (0., legend_below_graph, 1., 0.)
+            elif legend_location in [5, 7]:
+                legend_width = 210  # In pixels
+                legend_x = float(legend_width + 5 +  # 5 is the offset
+                                 self.MARGIN_RIGHT +
+                                 self.margin_right_extra +
+                                 self.MARGIN_LEFT +
+                                 self.margin_left_extra +
+                                 self.width) / self.width
+                self.margin_right_extra += legend_width
+                bbox_to_anchor = (legend_x, 0., 0., 1.)
+            else:
+                # default
+                bbox_to_anchor = (0., 0., 1., 1.)
+
             self.legend_obj = self.axes.legend(
                 handles,
                 labels,
-                #bbox_to_anchor=(0., 0., 1., 0.),
+                bbox_to_anchor=bbox_to_anchor,
                 loc=legend_location,
                 ncol=ncol,
                 borderaxespad=0.,
@@ -352,6 +396,39 @@ class DateGridGraph(NensGraph):
         if bottom:
             style['bottom'] = bottom[1]  # 'values' of bottom
         self.axes.bar(dates, values, **style)
+
+    def set_margins(self):
+        """
+        Set the graph margins.
+
+        Using MARGIN settings and margin_legend_bottom (in
+        pixels). Call after adding legend and other stuff, just before
+        png_response.
+        """
+        # Calculate surrounding space. We want it to be a constant
+        # number of pixels. Safety check first, else just "do something".
+        if (self.width > self.MARGIN_LEFT + self.margin_left_extra +
+            self.MARGIN_RIGHT + self.margin_right_extra and
+            self.height > self.MARGIN_TOP + self.margin_top_extra +
+            self.MARGIN_BOTTOM + self.margin_bottom_extra):
+
+            # x, y, width, height.. all from 0..1
+            axes_x = float(self.MARGIN_LEFT +
+                           self.margin_left_extra) / self.width
+            axes_y = float(self.MARGIN_BOTTOM +
+                           self.margin_bottom_extra) / self.height
+            axes_width = float(self.width -
+                               (self.MARGIN_LEFT +
+                                self.margin_left_extra +
+                                self.MARGIN_RIGHT +
+                                self.margin_right_extra)) / self.width
+            axes_height = float(self.height -
+                                (self.MARGIN_TOP +
+                                 self.margin_top_extra +
+                                 self.MARGIN_BOTTOM +
+                                 self.margin_bottom_extra)) / self.height
+            self.axes.set_position((axes_x, axes_y, axes_width, axes_height))
+
 
 
 class TimeSeriesViewMixin(object):
@@ -570,7 +647,7 @@ class GraphView(View, TimeSeriesViewMixin):
                 # You never know if there is a bug somewhere
                 logger.exception("Unknown error while drawing graph item.")
 
-        if not graph_settings['legend-location'] == -1:
+        if graph_settings['legend-location'] >= 0:
             graph.legend(legend_location=graph_settings['legend-location'])
 
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
@@ -579,6 +656,9 @@ class GraphView(View, TimeSeriesViewMixin):
         y_min = graph_settings.get('y-range-min', graph.axes.get_ylim()[0])
         y_max = graph_settings.get('y-range-max', graph.axes.get_ylim()[1])
         graph.axes.set_ylim(y_min, y_max)
+
+        # Set the margins, including legend.
+        graph.set_margins()
 
         return graph.png_response(
             response=HttpResponse(content_type='image/png'))
@@ -733,5 +813,9 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
         graph.axes.set_yticklabels(yticklabels)
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
         graph.axes.set_ylim(-0.5, len(yticklabels) - 0.5)
+
+        # Set the margins, including legend.
+        graph.set_margins()
+
         return graph.png_response(
             response=HttpResponse(content_type='image/png'))

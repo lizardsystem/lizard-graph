@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.3 (unreleased)
 ----------------
 
+- Improved legend locations.
+
 - Added absolute margins around graph.
 
 - Added natural key for predefined graph.
