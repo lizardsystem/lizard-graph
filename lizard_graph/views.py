@@ -10,7 +10,6 @@ from matplotlib.lines import Line2D
 from sets import Set
 
 from django.db.models import Avg
-from django.db.models import Min
 from django.db.models import Max
 from django.db.models import Sum
 from django.views.generic.base import View
@@ -20,7 +19,7 @@ from django.utils import simplejson as json
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
 from lizard_graph.models import HorizontalBarGraph
-from lizard_graph.models import HorizontalBarGraphItem
+#from lizard_graph.models import HorizontalBarGraphItem
 
 from nens_graph.common import LessTicksAutoDateLocator
 from nens_graph.common import MultilineAutoDateFormatter
@@ -81,11 +80,24 @@ def time_series_aggregated(qs, start, end,
 
     Postgres SQL that aggregates:
 
-        select date_part('year', datetime) as year, date_part('month', datetime) as month, sum(scalarvalue) from nskv00_opdb.timeseriesvaluesandflags group by year, month order by year, month;
+        select date_part('year', datetime) as year, date_part('month',
+        datetime) as month, sum(scalarvalue) from
+        nskv00_opdb.timeseriesvaluesandflags group by year, month
+        order by year, month;
 
-        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({'month': "date_part('month', datetime)", 'year': "date_part('year', datetime)"}).values('year', 'month').annotate(Sum('value'), Max('flag'))
+        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({
+        'month':
+        "date_part('month', datetime)", 'year': "date_part('year',
+        datetime)"}).values('year', 'month').annotate(Sum('value'),
+        Max('flag'))
 
-        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({'month': "date_part('month', datetime)", 'year': "date_part('year', datetime)", 'day': "date_part('day', datetime)"}).values('year', 'month', 'day').annotate(Sum('value'), Max('flag')).order_by('year', 'month', 'day')
+        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({
+        'month':
+        "date_part('month', datetime)", 'year': "date_part('year',
+        datetime)", 'day': "date_part('day',
+        datetime)"}).values('year', 'month',
+        'day').annotate(Sum('value'), Max('flag')).order_by('year',
+        'month', 'day')
     """
     POLARITIES = {'negative': -1}
 
@@ -457,7 +469,6 @@ class DateGridGraph(NensGraph):
             self.axes.set_position((axes_x, axes_y, axes_width, axes_height))
 
 
-
 class TimeSeriesViewMixin(object):
     """
     A mixin for a view that uses fewsnorm timeseries.
@@ -668,6 +679,7 @@ class GraphView(View, TimeSeriesViewMixin):
                             abs_single_ts, graph_item, bar_width,
                             default_color=default_colors[color_index],
                             bottom_ts=ts_stacked_sum[stacked_key])
+                        bar_status  # TODO: do something with it
                         ts_stacked_sum[stacked_key] += abs_single_ts
                         color_index = (color_index + 1) % len(default_colors)
             except:
