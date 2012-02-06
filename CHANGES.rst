@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.4 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Added series selection by time step and qualifier set.
 
 
 0.3 (2012-02-02)

@@ -10,7 +10,8 @@ from lizard_graph.models import HorizontalBarGraphItem
 
 class GraphItemInline(admin.TabularInline):
     model = GraphItem
-    fields = ('location', 'parameter', 'module', 'index', 'graph_type',
+    fields = ('location', 'parameter', 'module', 'time_step', 'qualifierset',
+              'index', 'graph_type',
               'value', 'color', 'color_outside', 'line_width',
               'line_style', 'label', )
 

@@ -244,6 +244,10 @@ class GraphItemMixin(models.Model):
             series = series.filter(parameter__id=self.parameter.ident)
         if self.module is not None:
             series = series.filter(moduleinstance__id=self.module.ident)
+        if self.time_step is not None:
+            series = series.filter(timestep__id=self.time_step.ident)
+        if self.qualifierset is not None:
+            series = series.filter(qualifierset__id=self.qualifierset.ident)
         return series
 
     def time_series(
