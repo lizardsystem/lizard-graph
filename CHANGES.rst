@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.5 (unreleased)
+0.5 (2012-02-06)
 ----------------
 
 - Added option 'now-line'.
