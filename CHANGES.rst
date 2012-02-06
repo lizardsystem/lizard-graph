@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.5 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Added options title and y-label.
 
 
 0.4 (2012-02-06)

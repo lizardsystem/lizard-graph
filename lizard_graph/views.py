@@ -219,8 +219,8 @@ class DateGridGraph(NensGraph):
         PredefinedGraph.PERIOD_YEAR: 365,
         }
 
-    MARGIN_TOP = 8
-    MARGIN_BOTTOM = 24
+    MARGIN_TOP = 10
+    MARGIN_BOTTOM = 25
     MARGIN_LEFT = 96
     MARGIN_RIGHT = 54
 
@@ -354,11 +354,11 @@ class DateGridGraph(NensGraph):
 
         layout = graph_item.layout_dict()
 
-        title = layout.get('label', '%s - %s (%s)' % (
+        label = layout.get('label', '%s - %s (%s)' % (
                 single_ts.location_id, single_ts.parameter_id,
                 single_ts.units))
         style = {
-            'label': title,
+            'label': label,
             'color': layout.get('color', default_color),
             'lw': layout.get('line-width', 2),
             'ls': layout.get('line-style', '-'),
@@ -369,7 +369,7 @@ class DateGridGraph(NensGraph):
         # Flags: style is not customizable.
         if flags:
             self.axes.plot(flag_dates, flag_values, "o-", color='red',
-                           label=title + ' flags')
+                           label=label + ' flags')
 
     def horizontal_line(self, value, layout, default_color=None):
         """
@@ -426,12 +426,12 @@ class DateGridGraph(NensGraph):
 
         layout = graph_item.layout_dict()
 
-        title = layout.get('label', '%s - %s (%s)' % (
+        label = layout.get('label', '%s - %s (%s)' % (
             single_ts.location_id, single_ts.parameter_id, single_ts.units))
 
         style = {'color': layout.get('color', default_color),
                  'edgecolor': layout.get('color-outside', 'grey'),
-                 'label': title,
+                 'label': label,
                  'width': bar_width}
         if bottom:
             style['bottom'] = bottom[1]  # 'values' of bottom
@@ -607,6 +607,13 @@ class GraphView(View, TimeSeriesViewMixin):
 
         bar_width = DateGridGraph.BAR_WIDTHS[PredefinedGraph.PERIOD_REVERSE[
             graph_settings['aggregation-period']]]
+        graph.figure.suptitle(
+            graph_settings.get('title', ''),
+            x=0.5, y=1,
+            horizontalalignment='center', verticalalignment='top')
+        # Disappears somewhere, but not so important now...
+        # graph.axes.set_xlabel(graph_settings.get('x-label', ''))
+        graph.axes.set_ylabel(graph_settings.get('y-label', ''))
 
         color_index = 0
         ts_stacked_sum = {
