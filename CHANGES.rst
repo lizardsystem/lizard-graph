@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.4 (unreleased)
+0.4 (2012-02-06)
 ----------------
 
 - Added series selection by time step and qualifier set.
