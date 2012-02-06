@@ -739,10 +739,13 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
     Display horizontal bars
     """
 
-    def get(self, request, *args, **kwargs):
-        width = int(request.GET.get('width', 1200))
-        height = int(request.GET.get('height', 500))
-        dt_start, dt_end = self._dt_from_request()
+    def _graph_items_from_request(self, request):
+        graph_settings = {
+            'width': 1200,
+            'height': 500,
+            'graph': None,  # must be filled
+            }
+        get = self.request.GET
 
         location = request.GET.get('location', None)
         if location is not None:
@@ -768,7 +771,21 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
                 logger.exception("Tried to fetch a non-existing hor.bar."
                                  "graph %s" % hor_graph_slug)
 
-        graph = DateGridGraph(width=width, height=height)
+        # Graph settings can be overruled
+        graph_parameters = ['width', 'height']
+        for graph_parameter in graph_parameters:
+            if graph_parameter in get:
+                graph_settings[graph_parameter] = get[graph_parameter]
+
+        return graph_items, graph_settings
+
+    def get(self, request, *args, **kwargs):
+
+        dt_start, dt_end = self._dt_from_request()
+        graph_items, graph_settings = self._graph_items_from_request(request)
+        graph = DateGridGraph(
+            width=int(graph_settings['width']),
+            height=int(graph_settings['height']))
 
         # # Legend. Must do this before using graph location calculations
         # legend_handles = [

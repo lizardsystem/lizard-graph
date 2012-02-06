@@ -310,3 +310,8 @@ class GraphItemTest(TestCase):
             }
         graph_items = GraphItem.from_dict(graph_item_dict)
         self.assertEquals(len(graph_items), 0)
+
+
+class HorizontalBarGraphViewTest(TestCase):
+    def test_dummy(self):
+        pass

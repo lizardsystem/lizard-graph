@@ -65,7 +65,7 @@ Standard input is:
 - aggregation-period: month*, day, quarter, year (for stacked-bar)
 - aggregation: sum*, avg (for stacked-bar)
 - reset-period: month*, day, quarter, year (for stacked-line-cumulative)
-- now-line: False (default), or True
+- now-line: False*, or True
 
 All parameters can be omitted. For the datetime the session default
 will be taken. For the width and height also defaults will be taken.
