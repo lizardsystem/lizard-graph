@@ -86,6 +86,7 @@ class PredefinedGraph(models.Model):
                                     help_text='Y range max')
     legend_location = models.IntegerField(
         choices=LEGEND_LOCATION_CHOICES, null=True, blank=True)
+    now_line = models.BooleanField(default=False)
 
     aggregation = models.IntegerField(
         null=True, blank=True, choices=AGGREGATION_CHOICES,
@@ -129,9 +130,12 @@ class PredefinedGraph(models.Model):
             result['y-range-max'] = self.y_range_max
         if self.legend_location is not None:
             result['legend-location'] = self.legend_location
+        if self.now_line:
+            result['now-line'] = True
 
         if self.aggregation:
-            result['aggregation'] = PredefinedGraph.AGGREGATION[self.aggregation]
+            result['aggregation'] = PredefinedGraph.AGGREGATION[
+                self.aggregation]
         if self.aggregation_period:
             result['aggregation-period'] = PredefinedGraph.PERIOD[
                 self.aggregation_period]

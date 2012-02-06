@@ -112,12 +112,13 @@ class GraphViewTest(TestCase):
         result, graph_settings = self.graph_items_from_request(
             'item={"type":"line","location":"111.1","parameter":"ALM",'
             '"layout":{"color":"red"}}&aggregation-period=year&'
-            'aggregation=avg&reset-period=day')
+            'aggregation=avg&reset-period=day&now-line=True')
 
         self.assertEquals(len(result), 1)
         self.assertEquals(graph_settings['aggregation-period'], 'year')
         self.assertEquals(graph_settings['aggregation'], 'avg')
         self.assertEquals(graph_settings['reset-period'], 'day')
+        self.assertEquals(graph_settings['now-line'], 'True')
 
     def test_graph_items_from_request5(self):
         """

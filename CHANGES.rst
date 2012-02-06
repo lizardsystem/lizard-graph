@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.5 (unreleased)
 ----------------
 
+- Added option 'now-line'.
+
 - Added options title and y-label.
 
 

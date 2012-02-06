@@ -523,6 +523,7 @@ class GraphView(View, TimeSeriesViewMixin):
             'height': 500,
             'legend-location': -1,
             'flags': False,
+            'now-line': False,
             }
         get = self.request.GET
 
@@ -564,7 +565,7 @@ class GraphView(View, TimeSeriesViewMixin):
         graph_parameters = [
             'title', 'x-label', 'y-label', 'y-range-min', 'y-range-max',
             'aggregation', 'aggregation-period', 'reset-period', 'width',
-            'height', 'legend-location', 'flags', ]
+            'height', 'legend-location', 'flags', 'now-line']
         for graph_parameter in graph_parameters:
             if graph_parameter in get:
                 graph_settings[graph_parameter] = get[graph_parameter]
@@ -705,6 +706,11 @@ class GraphView(View, TimeSeriesViewMixin):
         y_min = graph_settings.get('y-range-min', graph.axes.get_ylim()[0])
         y_max = graph_settings.get('y-range-max', graph.axes.get_ylim()[1])
         graph.axes.set_ylim(y_min, y_max)
+
+        # Now line?
+        if graph_settings.get('now-line', False):
+            today = datetime.datetime.now()
+            graph.axes.axvline(today, color='orange', lw=2, ls='--')
 
         # Set the margins, including legend.
         graph.set_margins()
