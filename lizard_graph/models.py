@@ -2,8 +2,11 @@
 from django.db import models
 
 from lizard_fewsnorm.models import GeoLocationCache
-from lizard_fewsnorm.models import ParameterCache
 from lizard_fewsnorm.models import ModuleCache
+from lizard_fewsnorm.models import ParameterCache
+from lizard_fewsnorm.models import QualifierSetCache
+from lizard_fewsnorm.models import TimeSeriesCache
+from lizard_fewsnorm.models import TimeStepCache
 
 from lizard_map.models import ColorField
 
@@ -210,6 +213,13 @@ class GraphItemMixin(models.Model):
     module = models.ForeignKey(
         ModuleCache, null=True, blank=True,
         help_text='For all types that require a fewsnorm source')
+    time_step = models.ForeignKey(
+        TimeStepCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
+    # Not qualifier_set because that conflicts with Django stuff.
+    qualifierset = models.ForeignKey(
+        QualifierSetCache, null=True, blank=True,
+        help_text='For all types that require a fewsnorm source')
 
     class Meta:
         abstract = True
@@ -362,6 +372,13 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
         if 'module' in graph_item_dict:
             module = ModuleCache(ident=graph_item_dict['module'])
             graph_item.module = module
+        if 'timestep' in graph_item_dict:
+            time_step = TimeStepCache(ident=graph_item_dict['timestep'])
+            graph_item.time_step = time_step
+        if 'qualifierset' in graph_item_dict:
+            qualifier_set = QualifierSetCache(
+                ident=graph_item_dict['qualifierset'])
+            graph_item.qualifierset = qualifier_set
         if 'polarity' in graph_item_dict:
             graph_item.value = graph_item_dict['polarity']
         if 'value' in graph_item_dict:
@@ -388,6 +405,10 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
             result['parameter'] = self.parameter.ident
         if self.module is not None:
             result['module'] = self.module.ident
+        if self.time_step is not None:
+            result['timestep'] = self.time_step.ident
+        if self.qualifierset is not None:
+            result['qualifierset'] = self.qualifierset.ident
         if self.value is not None:
             result['value'] = self.value
         return result

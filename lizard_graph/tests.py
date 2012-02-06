@@ -217,6 +217,38 @@ class GraphItemTest(TestCase):
             graph_items[0].layout_as_dict(), layout_dict)
         self.assertEquals(graph_items[0].as_dict(), graph_item_dict)
 
+    def test_from_dict4(self):
+        layout_dict = {'color': '00ff00'}
+        graph_item_dict = {
+            'type': 'line',
+            'location': 'fews-location-id',
+            'parameter': 'fews-parameter-id',
+            'module': 'fews-module-id',
+            'timestep': 'fews-time-step-id',
+            'qualifierset': 'fews-qualifier-set-id',
+            'value': 'blabla',
+            'layout': layout_dict,
+            }
+        graph_items = GraphItem.from_dict(graph_item_dict)
+        self.assertEquals(len(graph_items), 1)
+        self.assertEquals(
+            graph_items[0].graph_type, GraphItem.GRAPH_TYPE_LINE)
+        self.assertEquals(
+            graph_items[0].location.ident, 'fews-location-id')
+        self.assertEquals(
+            graph_items[0].parameter.ident, 'fews-parameter-id')
+        self.assertEquals(
+            graph_items[0].module.ident, 'fews-module-id')
+        self.assertEquals(
+            graph_items[0].time_step.ident, 'fews-time-step-id')
+        self.assertEquals(
+            graph_items[0].qualifierset.ident, 'fews-qualifier-set-id')
+        self.assertEquals(
+            graph_items[0].value, 'blabla')
+        self.assertEquals(
+            graph_items[0].layout_as_dict(), layout_dict)
+        self.assertEquals(graph_items[0].as_dict(), graph_item_dict)
+
     def test_from_dict_predefined_graph(self):
         pg = PredefinedGraph(name='test', slug='test-graph')
         pg.save()
