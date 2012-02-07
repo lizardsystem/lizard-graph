@@ -7,7 +7,6 @@ from django.test import TestCase
 
 from lizard_graph.views import TimeSeriesViewMixin
 from lizard_graph.views import GraphView
-from lizard_graph.views import HorizontalBarGraphView
 
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
@@ -311,28 +310,3 @@ class GraphItemTest(TestCase):
             }
         graph_items = GraphItem.from_dict(graph_item_dict)
         self.assertEquals(len(graph_items), 0)
-
-
-class HorizontalBarGraphViewTest(TestCase):
-    def graph_items_from_request(self, get):
-        class MockRequest(object):
-            def __init__(self, get):
-                self.GET = QueryDict(get)
-        request = MockRequest(get)
-        graph_view = HorizontalBarGraphView()
-        graph_view.request = request
-        return graph_view._graph_items_from_request()
-
-    def test_empty(self):
-        graph_item_dict = {}
-        graph_items, graph_settings = self.graph_items_from_request(
-            graph_item_dict)
-        self.assertTrue(graph_settings.has_key('width'))
-        self.assertTrue(graph_settings.has_key('height'))
-
-    def test_width_height(self):
-        graph_item_dict = 'width=123&height=345'
-        graph_items, graph_settings = self.graph_items_from_request(
-            graph_item_dict)
-        self.assertEquals(int(graph_settings['width']), 123)
-        self.assertEquals(int(graph_settings['height']), 345)

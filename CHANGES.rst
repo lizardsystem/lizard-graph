@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.7 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Moved HorizontalBarGraph view and models to lizard-measure.
 
 
 0.6 (2012-02-07)
