@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.6 (unreleased)
 ----------------
 
+- Moved DateGridGraph to nens-graph. Now depends on nens-graph >= 0.5.
+
 - Added tests for HorizontalBarGraphView and splitted function.
 
 
