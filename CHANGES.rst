@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.6 (unreleased)
+0.6 (2012-02-07)
 ----------------
 
 - Moved DateGridGraph to nens-graph. Now depends on nens-graph >= 0.5.
