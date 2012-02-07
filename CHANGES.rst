@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.6 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Added tests for HorizontalBarGraphView and splitted function.
 
 
 0.5 (2012-02-06)

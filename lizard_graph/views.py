@@ -739,15 +739,21 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
     Display horizontal bars
     """
 
-    def _graph_items_from_request(self, request):
+    def _graph_items_from_request(self):
+        """
+        Return graph_items and graph_settings
+
+        graph_items must be a list with for each item a function
+        time_series.  This function accepts keyword arguments dt_start
+        and dt_end and returns a list of timeseries.
+        """
         graph_settings = {
             'width': 1200,
             'height': 500,
-            'graph': None,  # must be filled
             }
         get = self.request.GET
 
-        location = request.GET.get('location', None)
+        location = get.get('location', None)
         if location is not None:
             try:
                 location = GeoLocationCache.objects.filter(ident=location)[0]
@@ -760,7 +766,7 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
 
         graph_items = []
         # Using the shortcut graph=<graph-slug>
-        hor_graph_slug = request.GET.get('graph', None)
+        hor_graph_slug = get.get('graph', None)
         if hor_graph_slug is not None:
             # Add all graph items of graph to result
             try:
@@ -782,7 +788,7 @@ class HorizontalBarGraphView(View, TimeSeriesViewMixin):
     def get(self, request, *args, **kwargs):
 
         dt_start, dt_end = self._dt_from_request()
-        graph_items, graph_settings = self._graph_items_from_request(request)
+        graph_items, graph_settings = self._graph_items_from_request()
         graph = DateGridGraph(
             width=int(graph_settings['width']),
             height=int(graph_settings['height']))
