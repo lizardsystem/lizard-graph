@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.7 (unreleased)
 ----------------
 
+- Fixed stacked bar bug by using nens-graph 0.5.1.
+
 - Moved HorizontalBarGraph view and models to lizard-measure.
 
 
