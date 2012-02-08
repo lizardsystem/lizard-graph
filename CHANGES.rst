@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.7 (unreleased)
+0.7 (2012-02-08)
 ----------------
 
 - Fixed stacked bar bug by using nens-graph 0.5.1.
