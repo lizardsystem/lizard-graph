@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.8 (unreleased)
+0.8 (2012-02-09)
 ----------------
 
 - Added csv output for GraphView.
