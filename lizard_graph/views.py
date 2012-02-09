@@ -228,6 +228,7 @@ class GraphView(View, TimeSeriesViewMixin):
             'legend-location': -1,
             'flags': False,
             'now-line': False,
+            'format': 'png',
             }
         get = self.request.GET
 
@@ -269,7 +270,7 @@ class GraphView(View, TimeSeriesViewMixin):
         graph_parameters = [
             'title', 'x-label', 'y-label', 'y-range-min', 'y-range-max',
             'aggregation', 'aggregation-period', 'reset-period', 'width',
-            'height', 'legend-location', 'flags', 'now-line']
+            'height', 'legend-location', 'flags', 'now-line', 'format', ]
         for graph_parameter in graph_parameters:
             if graph_parameter in get:
                 graph_settings[graph_parameter] = get[graph_parameter]
@@ -419,7 +420,16 @@ class GraphView(View, TimeSeriesViewMixin):
         # Set the margins, including legend.
         graph.set_margins()
 
-        return graph.png_response(
-            response=HttpResponse(content_type='image/png'))
+        response_format = graph_settings['format']
+        if response_format == 'csv':
+            response = HttpResponse(mimetype='text/csv')
+            response['Content-Disposition'] = (
+                'attachment; filename="%s.csv"' %
+                graph_settings.get('title', 'grafiek'))
+            graph.timeseries_csv(response)
+            return response
+        else:
+            return graph.png_response(
+                response=HttpResponse(content_type='image/png'))
 
 

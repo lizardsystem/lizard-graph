@@ -66,6 +66,7 @@ Standard input is:
 - aggregation: sum*, avg (for stacked-bar)
 - reset-period: month*, day, quarter, year (for stacked-line-cumulative)
 - now-line: False*, or True
+- format: png*, csv.
 
 All parameters can be omitted. For the datetime the session default
 will be taken. For the width and height also defaults will be taken.
@@ -191,6 +192,29 @@ The parameters that can be provided:
 Predefined graphs are described with django models without
 location. The assumption here is that the same location can be
 applied to all parameters that occur in a single graph.
+
+
+Colors
+------
+
+You can use predefined matplotlib colors:
+- blue/b
+- green/g
+- red/r
+- cyan/c
+- magenta/m
+- yellow/y
+- black/k
+- white/w
+
+Or the html coding in #rrggbb:
+- #77ff77
+- #ffff00
+
+Or gray shades:
+- 0.75
+- 0.5
+
 
 TODO
 ----
