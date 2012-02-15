@@ -162,7 +162,7 @@ class GraphLayoutMixin(models.Model):
         help_text="For everything with lines")
     line_style = models.CharField(
         null=True, blank=True, max_length=10, default=None,
-        help_text="For everything with lines")
+        help_text="For lines: - -- -. : . , o v ^ < > 1 2 s p * h + x D d |")
     label = models.CharField(max_length=80, blank=True, null=True)
 
     class Meta:
