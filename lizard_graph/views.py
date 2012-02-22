@@ -4,10 +4,7 @@
 import datetime
 import iso8601
 import logging
-import math
 from matplotlib.dates import date2num
-from matplotlib.lines import Line2D
-from sets import Set
 
 from django.db.models import Avg
 from django.db.models import Max
@@ -19,11 +16,7 @@ from django.utils import simplejson as json
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
 
-from nens_graph.common import LessTicksAutoDateLocator
-from nens_graph.common import MultilineAutoDateFormatter
-from nens_graph.common import NensGraph
 from nens_graph.common import DateGridGraph
-from nens_graph.common import dates_values
 
 from timeseries import timeseries
 
@@ -38,8 +31,14 @@ from lizard_fewsnorm.models import GeoLocationCache
 logger = logging.getLogger(__name__)
 
 
+# Used by time_series_aggregated to 'flag' a time series.
+TIME_SERIES_ALL = 1
+TIME_SERIES_POSITIVE = 2
+TIME_SERIES_NEGATIVE = 3
+
+
 def time_series_aggregated(qs, start, end,
-                           aggregation, aggregation_period, polarity=None):
+                           aggregation, aggregation_period):
     """
     Aggregated time series. Based on TimeSeries._from_django_QuerySet.
 
@@ -67,16 +66,17 @@ def time_series_aggregated(qs, start, end,
         'day').annotate(Sum('value'), Max('flag')).order_by('year',
         'month', 'day')
     """
-    POLARITIES = {'negative': -1}
-
     result = {}
     # Convert aggregation vars from strings to defined constants
     aggregation_period = PredefinedGraph.PERIOD_REVERSE[aggregation_period]
     aggregation = PredefinedGraph.AGGREGATION_REVERSE[aggregation]
-    multiplier = POLARITIES.get(polarity, 1)
 
     for series in qs:
-        obj = timeseries.TimeSeries()
+        obj = {
+            TIME_SERIES_ALL: timeseries.TimeSeries(),
+            TIME_SERIES_POSITIVE: timeseries.TimeSeries(),
+            TIME_SERIES_NEGATIVE: timeseries.TimeSeries()}
+
         event = None
         event_set = series.event_set.all()
         if start is not None:
@@ -115,17 +115,25 @@ def time_series_aggregated(qs, start, end,
                 int(event.get('month', 1)),
                 int(event.get('day', 1)))
             # Comments are lost
-            obj[timestamp] = (event['agg'] * multiplier,
-                              event['flag__max'], '')
+            value = event['agg']
+            obj[TIME_SERIES_ALL][timestamp] = (
+                value, event['flag__max'], '')
+            if value >= 0:
+                obj[TIME_SERIES_POSITIVE][timestamp] = (
+                    value, event['flag__max'], '')
+            else:
+                obj[TIME_SERIES_NEGATIVE][timestamp] = (
+                    value, event['flag__max'], '')
 
         if event is not None:
-            ## nice: we ran the loop at least once.
-            obj.location_id = series.location.id
-            obj.parameter_id = series.parameter.id
-            obj.time_step = series.timestep.id
-            obj.units = series.parameter.groupkey.unit
-            ## and add the TimeSeries to the result
-            result[(obj.location_id, obj.parameter_id)] = obj
+            for k in obj.keys():
+                ## nice: we ran the loop at least once.
+                obj[k].location_id = series.location.id
+                obj[k].parameter_id = series.parameter.id
+                obj[k].time_step = series.timestep.id
+                obj[k].units = series.parameter.groupkey.unit
+                ## and add the TimeSeries to the result
+                result[(obj[k].location_id, obj[k].parameter_id, k)] = obj[k]
     return result
 
 
@@ -387,17 +395,54 @@ class GraphView(View, TimeSeriesViewMixin):
                     else:
                         stacked_key = 'bar-positive'
                         polarity = 1
-                    for (loc, par), single_ts in ts.items():
+                    for (loc, par, option), single_ts in ts.items():
+                        if option == TIME_SERIES_ALL:
+                            # Make sure all timestamps are present.
+                            ts_stacked_sum[stacked_key] += single_ts * 0
+                            abs_single_ts = polarity * abs(single_ts)
+                            graph.bar_from_single_ts(
+                                abs_single_ts, graph_item, bar_width,
+                                default_color=default_colors[color_index],
+                                bottom_ts=ts_stacked_sum[stacked_key])
+                            ts_stacked_sum[stacked_key] += abs_single_ts
+                            color_index = (color_index + 1) % len(
+                                default_colors)
+                elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR_SIGN:
+                    qs = graph_item.series()
+                    ts = time_series_aggregated(
+                        qs, dt_start, dt_end,
+                        aggregation=graph_settings['aggregation'],
+                        aggregation_period=graph_settings[
+                            'aggregation-period'])
+                    if graph_item.value == 'negative':
+                        stacked_key_positive = 'bar-negative'
+                        stacked_key_negative = 'bar-positive'
+                        polarity = {
+                            TIME_SERIES_POSITIVE: -1,
+                            TIME_SERIES_NEGATIVE: 1}
+                    else:
+                        stacked_key_positive = 'bar-positive'
+                        stacked_key_negative = 'bar-negative'
+                        polarity = {
+                            TIME_SERIES_POSITIVE: 1,
+                            TIME_SERIES_NEGATIVE: -1}
+                    for (loc, par, option), single_ts in ts.items():
                         # Make sure all timestamps are present.
-                        ts_stacked_sum[stacked_key] += single_ts * 0
-                        abs_single_ts = polarity * abs(single_ts)
-                        bar_status = graph.bar_from_single_ts(
-                            abs_single_ts, graph_item, bar_width,
-                            default_color=default_colors[color_index],
-                            bottom_ts=ts_stacked_sum[stacked_key])
-                        bar_status  # TODO: do something with it
-                        ts_stacked_sum[stacked_key] += abs_single_ts
-                        color_index = (color_index + 1) % len(default_colors)
+                        if option == TIME_SERIES_POSITIVE:
+                            stacked_key = stacked_key_positive
+                        elif option == TIME_SERIES_NEGATIVE:
+                            stacked_key = stacked_key_negative
+                        if (option == TIME_SERIES_POSITIVE or
+                            option == TIME_SERIES_NEGATIVE):
+                            ts_stacked_sum[stacked_key] += single_ts * 0
+                            abs_single_ts = polarity[option] * abs(single_ts)
+                            graph.bar_from_single_ts(
+                                abs_single_ts, graph_item, bar_width,
+                                default_color=default_colors[color_index],
+                                bottom_ts=ts_stacked_sum[stacked_key])
+                            ts_stacked_sum[stacked_key] += abs_single_ts
+                            color_index = (color_index + 1) % len(
+                                default_colors)
             except:
                 # You never know if there is a bug somewhere
                 logger.exception("Unknown error while drawing graph item.")
@@ -431,5 +476,3 @@ class GraphView(View, TimeSeriesViewMixin):
         else:
             return graph.png_response(
                 response=HttpResponse(content_type='image/png'))
-
-

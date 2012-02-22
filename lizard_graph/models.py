@@ -281,12 +281,14 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
     GRAPH_TYPE_STACKED_LINE = 5
     GRAPH_TYPE_STACKED_LINE_CUMULATIVE = 6
     GRAPH_TYPE_PREDEFINED_GRAPH = 7
+    GRAPH_TYPE_STACKED_BAR_SIGN = 8
 
     GRAPH_TYPE_CHOICES = (
         (GRAPH_TYPE_LINE, 'line'),
         (GRAPH_TYPE_VERTICAL_LINE, 'vertical-line'),
         (GRAPH_TYPE_HORIZONTAL_LINE, 'horizontal-line'),
         (GRAPH_TYPE_STACKED_BAR, 'stacked-bar'),
+        (GRAPH_TYPE_STACKED_BAR_SIGN, 'stacked-bar-sign'),
         (GRAPH_TYPE_STACKED_LINE, 'stacked-line'),
         (GRAPH_TYPE_STACKED_LINE_CUMULATIVE, 'stacked-line-cumulative'),
         (GRAPH_TYPE_PREDEFINED_GRAPH, 'predefined-graph'),

@@ -5,7 +5,9 @@ Changelog of lizard-graph
 0.9 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Added option for stacked-bar-sign: same as stacked-bar, except that
+  it is dependent on the sign where each bar is stacked, on the
+  positive side or the negative side.
 
 
 0.8 (2012-02-09)

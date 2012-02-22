@@ -163,6 +163,24 @@ Global parameters (outside item):
 - aggregation: sum, avg
 
 
+Stacked bar sign
+----------------
+
+Same as stacked bar, except that the sign of the values determine
+whether each bar is stacked on the positive or negative side. You can
+use the polarity option to flip it upside-down.
+
+- type: stacked-bar-sign
+- location
+- parameter
+- value (optional): polarity "positive" (default), "negative"
+- layout (optional): color, color-outside
+
+Global parameters (outside item):
+- aggregation-period: month, day, quarter, year
+- aggregation: sum, avg
+
+
 Stacked line
 ------------
 
