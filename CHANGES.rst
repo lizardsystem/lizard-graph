@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.9 (unreleased)
+0.9 (2012-02-22)
 ----------------
 
 - Added option for stacked-bar-sign: same as stacked-bar, except that
