@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.11 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Changed cache keys to make it memcached compatible.
 
 
 0.10 (2012-02-23)

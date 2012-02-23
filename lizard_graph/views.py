@@ -151,11 +151,11 @@ def cached_time_series_aggregated(graph_item, start, end,
     def agg_time_series_key(
         graph_item, start, end, aggregation, aggregation_period):
 
-        return 'ts_agg - %s - %s %s %s %s %s - %s %s %s %s' % (
+        return ('ts_agg::%s:%s:%s:%s:%s:%s::%s:%s:%s:%s' % (
             graph_item.fews_norm_db_name, graph_item.location,
             graph_item.parameter, graph_item.module, graph_item.time_step,
             graph_item.qualifierset, start, end, aggregation,
-            aggregation_period)
+            aggregation_period)).replace(' ', '_')
     cache_key = agg_time_series_key(graph_item, start, end, aggregation, aggregation_period)
     ts_agg = cache.get(cache_key)
     if ts_agg is None:
@@ -171,10 +171,10 @@ def cached_time_series_from_graph_item(graph_item, start, end):
     Cached version of graph_item.time_series(start, end)
     """
     def time_series_key(graph_item, start, end):
-        return 'ts - %s - %s %s %s %s %s - %s %s' % (
+        return ('ts::%s:%s:%s:%s:%s:%s::%s:%s' % (
             graph_item.fews_norm_db_name, graph_item.location,
             graph_item.parameter, graph_item.module, graph_item.time_step,
-            graph_item.qualifierset, start, end)
+            graph_item.qualifierset, start, end)).replace(' ', '_')
     cache_key = time_series_key(graph_item, start, end)
     ts = cache.get(cache_key)
     if ts is None:
