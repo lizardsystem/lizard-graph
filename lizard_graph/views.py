@@ -6,6 +6,7 @@ import iso8601
 import logging
 from matplotlib.dates import date2num
 
+from django.core.cache import cache
 from django.db.models import Avg
 from django.db.models import Max
 from django.db.models import Sum
@@ -41,6 +42,10 @@ def time_series_aggregated(qs, start, end,
                            aggregation, aggregation_period):
     """
     Aggregated time series. Based on TimeSeries._from_django_QuerySet.
+
+    Result is a dictionary with timeseries. The keys are: (location,
+    parameter, option), where option is TIME_SERIES_ALL,
+    TIME_SERIES_POSITIVE or TIME_SERIES_NEGATIVE
 
     It was not handy to integrate this into
     TimeSeries, because the import function would explode.
@@ -131,10 +136,51 @@ def time_series_aggregated(qs, start, end,
                 obj[k].location_id = series.location.id
                 obj[k].parameter_id = series.parameter.id
                 obj[k].time_step = series.timestep.id
+                #obj[k].moduleinstance = series.moduleinstance.id
                 obj[k].units = series.parameter.groupkey.unit
                 ## and add the TimeSeries to the result
                 result[(obj[k].location_id, obj[k].parameter_id, k)] = obj[k]
     return result
+
+
+def cached_time_series_aggregated(graph_item, start, end,
+                                  aggregation, aggregation_period):
+    """
+    Cached version of the time_series_aggregated
+    """
+    def agg_time_series_key(
+        graph_item, start, end, aggregation, aggregation_period):
+
+        return 'ts_agg - %s - %s %s %s %s %s - %s %s %s %s' % (
+            graph_item.fews_norm_db_name, graph_item.location,
+            graph_item.parameter, graph_item.module, graph_item.time_step,
+            graph_item.qualifierset, start, end, aggregation,
+            aggregation_period)
+    cache_key = agg_time_series_key(graph_item, start, end, aggregation, aggregation_period)
+    ts_agg = cache.get(cache_key)
+    if ts_agg is None:
+        qs = graph_item.series()
+        ts_agg = time_series_aggregated(qs, start, end,
+                                        aggregation, aggregation_period)
+        cache.set(cache_key, ts_agg)
+    return ts_agg
+
+
+def cached_time_series_from_graph_item(graph_item, start, end):
+    """
+    Cached version of graph_item.time_series(start, end)
+    """
+    def time_series_key(graph_item, start, end):
+        return 'ts - %s - %s %s %s %s %s - %s %s' % (
+            graph_item.fews_norm_db_name, graph_item.location,
+            graph_item.parameter, graph_item.module, graph_item.time_step,
+            graph_item.qualifierset, start, end)
+    cache_key = time_series_key(graph_item, start, end)
+    ts = cache.get(cache_key)
+    if ts is None:
+        ts = graph_item.time_series(start, end)
+        cache.set(cache_key, ts)
+    return ts
 
 
 def time_series_cumulative(ts, reset_period):
@@ -251,8 +297,9 @@ class GraphView(View, TimeSeriesViewMixin):
                     location_get = GeoLocationCache.objects.filter(
                         ident=location_get)[0]
                 except IndexError:
-                    # Beware: read-only.
-                    logger.exception(
+                    # Beware: read-only. Throw away this 'useless'
+                    # exception message.
+                    logger.error(
                         ('Tried to fetch a non-existing GeoLocationCache '
                          'object %s') % location_get)
                     location_get = GeoLocationCache(ident=location_get)
@@ -341,7 +388,8 @@ class GraphView(View, TimeSeriesViewMixin):
 
             try:
                 if graph_type == GraphItem.GRAPH_TYPE_LINE:
-                    ts = graph_item.time_series(dt_start, dt_end)
+                    ts = cached_time_series_from_graph_item(
+                        graph_item, dt_start, dt_end)
                     for (loc, par), single_ts in ts.items():
                         graph.line_from_single_ts(
                             single_ts, graph_item,
@@ -351,7 +399,8 @@ class GraphView(View, TimeSeriesViewMixin):
                 elif (graph_type ==
                       GraphItem.GRAPH_TYPE_STACKED_LINE_CUMULATIVE or
                       graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
-                    ts = graph_item.time_series(dt_start, dt_end)
+                    ts = cached_time_series_from_graph_item(
+                        graph_item, dt_start, dt_end)
                     for (loc, par), single_ts in ts.items():
                         if (graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
                             current_ts = single_ts
@@ -383,9 +432,8 @@ class GraphView(View, TimeSeriesViewMixin):
                         default_color=default_colors[color_index])
                     color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR:
-                    qs = graph_item.series()
-                    ts = time_series_aggregated(
-                        qs, dt_start, dt_end,
+                    ts = cached_time_series_aggregated(
+                        graph_item, dt_start, dt_end,
                         aggregation=graph_settings['aggregation'],
                         aggregation_period=graph_settings[
                             'aggregation-period'])
@@ -408,9 +456,8 @@ class GraphView(View, TimeSeriesViewMixin):
                             color_index = (color_index + 1) % len(
                                 default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_STACKED_BAR_SIGN:
-                    qs = graph_item.series()
-                    ts = time_series_aggregated(
-                        qs, dt_start, dt_end,
+                    ts = cached_time_series_aggregated(
+                        graph_item, dt_start, dt_end,
                         aggregation=graph_settings['aggregation'],
                         aggregation_period=graph_settings[
                             'aggregation-period'])

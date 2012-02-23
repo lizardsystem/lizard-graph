@@ -5,7 +5,9 @@ Changelog of lizard-graph
 0.10 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Added cached_time_series_aggregated to improve performance.
+
+- Added cached_time_series_from_graph_item to improve performance.
 
 
 0.9 (2012-02-22)
