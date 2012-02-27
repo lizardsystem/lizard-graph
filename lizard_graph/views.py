@@ -13,6 +13,9 @@ from django.db.models import Sum
 from django.views.generic.base import View
 from django.http import HttpResponse
 from django.utils import simplejson as json
+from django.template import Context
+from django.template.loader import get_template
+
 
 from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
@@ -36,6 +39,22 @@ logger = logging.getLogger(__name__)
 TIME_SERIES_ALL = 1
 TIME_SERIES_POSITIVE = 2
 TIME_SERIES_NEGATIVE = 3
+
+
+def graph_window(request):
+
+    title = request.GET.get('title','grafiek')
+    graph_url = request.GET.get('graph_url', '')
+
+    t = get_template('lizard_graph/graph_window.html')
+
+    c = Context({
+        'title': title,
+        'graph_url': graph_url,
+    })
+
+    return HttpResponse(t.render(c),
+        mimetype='text/html')
 
 
 def time_series_aggregated(qs, start, end,
