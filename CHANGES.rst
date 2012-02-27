@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.11 (unreleased)
+0.11 (2012-02-27)
 -----------------
 
 - added html page which shows fullscreen graph (/graph/window)
