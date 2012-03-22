@@ -5,7 +5,8 @@ Changelog of lizard-graph
 0.12 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Added a working (but slow) implementation of event comments in
+  GraphItemMixin.
 
 
 0.11 (2012-02-27)

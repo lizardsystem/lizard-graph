@@ -11,6 +11,7 @@ from lizard_fewsnorm.models import TimeStepCache
 from lizard_map.models import ColorField
 
 from lizard_fewsnorm.models import Series
+from lizard_fewsnorm.models import TimeseriesComments
 from timeseries import timeseries
 
 import logging
@@ -255,18 +256,36 @@ class GraphItemMixin(models.Model):
         return series
 
     def time_series(
-        self, dt_start=None, dt_end=None, db_name=None):
+        self, dt_start=None, dt_end=None, db_name=None, with_comments=False):
         """
         Return dictionary of timeseries.
 
         Keys are (location, parameter), value is timeseries object.
+
+        with_comments can be turned on, but it makes it *REALLY SLOW*
         """
         # if not self._require_fewsnorm():
         #     return {}
 
         series = self.series(db_name=db_name)
+        if db_name is None:
+            db_name = self.fews_norm_db_name
+
         ts = timeseries.TimeSeries.as_dict(
             series, dt_start, dt_end)
+        if with_comments:
+            # Add comments manually - slow
+            # Ugly hack to do some kind of join
+            series_keys = {}
+            for single_series in series:
+                series_keys[(single_series.location.id, single_series.parameter.id)] = single_series.pk
+            for (loc_id, par_id), single_ts in ts.items():
+                for timestamp, (value, flag, comment) in single_ts.get_events():
+                    real_comment = TimeseriesComments.objects.using(
+                        db_name).get(
+                        serieskey=series_keys[(loc_id, par_id)],
+                        datetime=timestamp)
+                    single_ts[timestamp] = (value, flag, real_comment)
         return ts
 
 
