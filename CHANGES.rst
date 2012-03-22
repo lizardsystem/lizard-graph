@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.12 (unreleased)
+0.12 (2012-03-22)
 -----------------
 
 - Added a working (but slow) implementation of event comments in
