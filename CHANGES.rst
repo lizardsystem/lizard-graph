@@ -5,7 +5,8 @@ Changelog of lizard-graph
 0.13 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Changed comments of GraphItemMixin.time_series: it's now a string
+  instead of a TimeseriesComments object.
 
 
 0.12 (2012-03-22)

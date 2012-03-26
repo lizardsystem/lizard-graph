@@ -284,7 +284,7 @@ class GraphItemMixin(models.Model):
                     real_comment = TimeseriesComments.objects.using(
                         db_name).get(
                         serieskey=series_keys[(loc_id, par_id)],
-                        datetime=timestamp)
+                        datetime=timestamp).comment
                     single_ts[timestamp] = (value, flag, real_comment)
         return ts
 
