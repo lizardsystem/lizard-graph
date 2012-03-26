@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.13 (unreleased)
+0.13 (2012-03-26)
 -----------------
 
 - Changed comments of GraphItemMixin.time_series: it's now a string
