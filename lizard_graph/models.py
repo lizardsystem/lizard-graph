@@ -10,6 +10,7 @@ from lizard_fewsnorm.models import TimeStepCache
 
 from lizard_map.models import ColorField
 
+from lizard_fewsnorm.models import Event
 from lizard_fewsnorm.models import Series
 from lizard_fewsnorm.models import TimeseriesComments
 from timeseries import timeseries
@@ -230,63 +231,67 @@ class GraphItemMixin(models.Model):
         abstract = True
 
     @property
-    def fews_norm_db_name(self):
+    def fews_norm_source(self):
         if self.location and self.location.fews_norm_source:
-            return self.location.fews_norm_source.database_name
+            return self.location.fews_norm_source
         else:
             return None
 
-    def series(self, db_name=None):
-        if db_name is None:
-            db_name = self.fews_norm_db_name
-        if not db_name:
-            return {}
-
-        series = Series.objects.using(db_name).all()
+    def series_params(self):
+        """ Params for series """
+        params = {}
         if self.location is not None:
-            series = series.filter(location__id=self.location.ident)
+            params['location'] = self.location.ident
         if self.parameter is not None:
-            series = series.filter(parameter__id=self.parameter.ident)
+            params['parameter'] = self.parameter.ident
         if self.module is not None:
-            series = series.filter(moduleinstance__id=self.module.ident)
+            params['moduleinstance'] = self.module.ident
         if self.time_step is not None:
-            series = series.filter(timestep__id=self.time_step.ident)
+            params['timestep'] = self.time_step.ident
         if self.qualifierset is not None:
-            series = series.filter(qualifierset__id=self.qualifierset.ident)
-        return series
+            params['qualifierset'] = self.qualifierset.ident
+        return params
 
     def time_series(
-        self, dt_start=None, dt_end=None, db_name=None, with_comments=False):
+        self, dt_start=None, dt_end=None, with_comments=False):
         """
         Return dictionary of timeseries.
 
+        Low level fewsnorm stuff.
+
         Keys are (location, parameter), value is timeseries object.
 
-        with_comments can be turned on, but it makes it *REALLY SLOW*
+        1) which series
+        2) retrieve events (with comments) for each series
+
+        Note: with_comments does nothing anymore, comments are always
+        returned. The option is still there for compatibility.
         """
-        # if not self._require_fewsnorm():
-        #     return {}
+        source = self.fews_norm_source
+        params = self.series_params()
 
-        series = self.series(db_name=db_name)
-        if db_name is None:
-            db_name = self.fews_norm_db_name
+        series = Series.from_raw(
+            schema_prefix=source.database_schema_name,
+            params=params).using(source.database_name)
 
-        ts = timeseries.TimeSeries.as_dict(
-            series, dt_start, dt_end)
-        if with_comments:
-            # Add comments manually - slow
-            # Ugly hack to do some kind of join
-            series_keys = {}
-            for single_series in series:
-                series_keys[(single_series.location.id, single_series.parameter.id)] = single_series.pk
-            for (loc_id, par_id), single_ts in ts.items():
-                for timestamp, (value, flag, comment) in single_ts.get_events():
-                    real_comment = TimeseriesComments.objects.using(
-                        db_name).get(
-                        serieskey=series_keys[(loc_id, par_id)],
-                        datetime=timestamp).comment
-                    single_ts[timestamp] = (value, flag, real_comment)
-        return ts
+        result = {}
+        for single_series in series:
+            new_timeseries = timeseries.TimeSeries()
+            new_timeseries.location_id = single_series.location
+            new_timeseries.parameter_id = single_series.parameter
+            new_timeseries.time_step = single_series.timestep
+            new_timeseries.units = single_series.unit
+            # Fill new timeseries with events from dt_start to dt_end
+            events = Event.from_raw(
+                single_series, dt_start, dt_end,
+                schema_prefix=source.database_schema_name).using(
+                source.database_name)
+            for event in events:
+                new_timeseries[event.timestamp] = (
+                    event.value, event.flag, event.comment)
+
+            result[single_series.location, single_series.parameter] = new_timeseries
+        return result
 
 
 class GraphItem(GraphItemMixin, GraphLayoutMixin):

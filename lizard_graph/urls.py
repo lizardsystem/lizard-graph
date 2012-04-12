@@ -11,6 +11,8 @@ from lizard_graph.views import GraphView
 from lizard_graph.views import graph_window
 
 
+API_URL_NAME = 'lizard_graph_api_root'
+
 admin.autodiscover()
 
 urlpatterns = patterns(
