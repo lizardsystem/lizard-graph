@@ -227,6 +227,11 @@ class GraphItemMixin(models.Model):
         QualifierSetCache, null=True, blank=True,
         help_text='For all types that require a fewsnorm source')
 
+    # Used by time_series_aggregated to 'flag' a time series.
+    TIME_SERIES_ALL = 1
+    TIME_SERIES_POSITIVE = 2
+    TIME_SERIES_NEGATIVE = 3
+
     class Meta:
         abstract = True
 
@@ -252,6 +257,17 @@ class GraphItemMixin(models.Model):
             params['qualifierset'] = self.qualifierset.ident
         return params
 
+    def series(self):
+        """Return Series corresponding with this object"""
+        params = self.series_params()
+
+        source = self.fews_norm_source
+        series = Series.from_raw(
+            schema_prefix=source.database_schema_name,
+            params=params).using(source.database_name)
+
+        return series
+
     def time_series(
         self, dt_start=None, dt_end=None, with_comments=False):
         """
@@ -268,29 +284,84 @@ class GraphItemMixin(models.Model):
         returned. The option is still there for compatibility.
         """
         source = self.fews_norm_source
-        params = self.series_params()
-
-        series = Series.from_raw(
-            schema_prefix=source.database_schema_name,
-            params=params).using(source.database_name)
+        series = self.series()
 
         result = {}
         for single_series in series:
-            new_timeseries = timeseries.TimeSeries()
-            new_timeseries.location_id = single_series.location
-            new_timeseries.parameter_id = single_series.parameter
-            new_timeseries.time_step = single_series.timestep
-            new_timeseries.units = single_series.unit
             # Fill new timeseries with events from dt_start to dt_end
             events = Event.from_raw(
                 single_series, dt_start, dt_end,
                 schema_prefix=source.database_schema_name).using(
                 source.database_name)
+
+            # Put the events in a Timeseries object
+            new_timeseries = timeseries.TimeSeries()
+            new_timeseries.location_id = single_series.location
+            new_timeseries.parameter_id = single_series.parameter
+            new_timeseries.time_step = single_series.timestep
+            new_timeseries.units = single_series.unit
             for event in events:
                 new_timeseries[event.timestamp] = (
                     event.value, event.flag, event.comment)
 
             result[single_series.location, single_series.parameter] = new_timeseries
+        return result
+
+    def time_series_aggregated(
+        self, aggregation, aggregation_period,
+        dt_start=None, dt_end=None):
+        """
+        Aggregated time series.
+
+        Result is a dictionary with timeseries. The keys are: (location,
+        parameter, option), where option is (GraphItemMixin.)TIME_SERIES_ALL,
+        TIME_SERIES_POSITIVE or TIME_SERIES_NEGATIVE
+
+        aggregation: see PredefinedGraph
+        'avg', 'sum'
+
+        aggregation_period: see PredefinedGraph
+        'day', 'month', 'quarter', 'year'
+        """
+        source = self.fews_norm_source
+        series = self.series()
+
+        result = {}
+        for single_series in series:
+            obj = {
+                GraphItemMixin.TIME_SERIES_ALL: timeseries.TimeSeries(),
+                GraphItemMixin.TIME_SERIES_POSITIVE: timeseries.TimeSeries(),
+                GraphItemMixin.TIME_SERIES_NEGATIVE: timeseries.TimeSeries()}
+            # Somehow get the events with aggregation in it
+            # aggregation == PredefinedGraph.AGGREGATION_AVG, AGGREGATION_SUM
+            # aggregation_period == PredefinedGraph.PERIOD_YEAR, PERIOD_MONTH, PERIOD_QUARTER, PERIOD_DAY
+            # between dt_start and dt_end
+            events = Event.agg_from_raw(
+                single_series, dt_start=dt_start, dt_end=dt_end,
+                schema_prefix=source.database_schema_name,
+                agg_function=aggregation,
+                agg_period=aggregation_period).using(source.database_name)
+
+            # Put the events in Timeseries objects in obj
+            for event in events:
+                obj[GraphItemMixin.TIME_SERIES_ALL][event.timestamp] = (
+                    event.value, event.flag, event.comment)
+                if event.value >= 0:
+                    obj[GraphItemMixin.TIME_SERIES_POSITIVE][event.timestamp] = (
+                    event.value, event.flag, event.comment)
+                else:
+                    obj[GraphItemMixin.TIME_SERIES_NEGATIVE][event.timestamp] = (
+                    event.value, event.flag, event.comment)
+
+            # Now put the timeseries in the result
+            for k in obj.keys():
+                obj[k].location_id = single_series.location
+                obj[k].parameter_id = single_series.parameter
+                obj[k].time_step = single_series.timestep
+                obj[k].units = single_series.unit
+
+                result[single_series.location, single_series.parameter, k] = obj[k]
+
         return result
 
 

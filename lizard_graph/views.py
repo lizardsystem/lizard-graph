@@ -57,111 +57,6 @@ def graph_window(request):
         mimetype='text/html')
 
 
-def time_series_aggregated(qs, start, end,
-                           aggregation, aggregation_period):
-    """
-    Aggregated time series. Based on TimeSeries._from_django_QuerySet.
-
-    Result is a dictionary with timeseries. The keys are: (location,
-    parameter, option), where option is TIME_SERIES_ALL,
-    TIME_SERIES_POSITIVE or TIME_SERIES_NEGATIVE
-
-    It was not handy to integrate this into
-    TimeSeries, because the import function would explode.
-
-    Postgres SQL that aggregates:
-
-        select date_part('year', datetime) as year, date_part('month',
-        datetime) as month, sum(scalarvalue) from
-        nskv00_opdb.timeseriesvaluesandflags group by year, month
-        order by year, month;
-
-        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({
-        'month':
-        "date_part('month', datetime)", 'year': "date_part('year',
-        datetime)"}).values('year', 'month').annotate(Sum('value'),
-        Max('flag'))
-
-        Event.objects.using('fewsnorm').filter(timestamp__year=2011).extra({
-        'month':
-        "date_part('month', datetime)", 'year': "date_part('year',
-        datetime)", 'day': "date_part('day',
-        datetime)"}).values('year', 'month',
-        'day').annotate(Sum('value'), Max('flag')).order_by('year',
-        'month', 'day')
-    """
-    result = {}
-    # Convert aggregation vars from strings to defined constants
-    aggregation_period = PredefinedGraph.PERIOD_REVERSE[aggregation_period]
-    aggregation = PredefinedGraph.AGGREGATION_REVERSE[aggregation]
-
-    for series in qs:
-        obj = {
-            TIME_SERIES_ALL: timeseries.TimeSeries(),
-            TIME_SERIES_POSITIVE: timeseries.TimeSeries(),
-            TIME_SERIES_NEGATIVE: timeseries.TimeSeries()}
-
-        event = None
-        event_set = series.event_set.all()
-        if start is not None:
-            event_set = event_set.filter(timestamp__gte=start)
-        if end is not None:
-            event_set = event_set.filter(timestamp__lte=end)
-
-        # Aggregation period
-        if aggregation_period == PredefinedGraph.PERIOD_YEAR:
-            event_set = event_set.extra(
-                {'year': "date_part('year', datetime)"}).values(
-                'year').order_by('year')
-        elif (aggregation_period == PredefinedGraph.PERIOD_MONTH or
-              aggregation_period == PredefinedGraph.PERIOD_QUARTER):
-            event_set = event_set.extra(
-                {'year': "date_part('year', datetime)",
-                 'month': "date_part('month', datetime)", }).values(
-                'year', 'month').order_by('year', 'month')
-        elif aggregation_period == PredefinedGraph.PERIOD_DAY:
-            event_set = event_set.extra(
-                {'year': "date_part('year', datetime)",
-                 'month': "date_part('month', datetime)",
-                 'day': "date_part('day', datetime)", }).values(
-                'year', 'month', 'day').order_by('year', 'month', 'day')
-        # Aggregate value and flags
-        if aggregation == PredefinedGraph.AGGREGATION_AVG:
-            event_set = event_set.annotate(Max('flag'), agg=Avg('value'))
-        elif aggregation == PredefinedGraph.AGGREGATION_SUM:
-            event_set = event_set.annotate(Max('flag'), agg=Sum('value'))
-        # Event is now a dict with keys agg, flag__max, year,
-        # month (if applicable, default 1), day (if
-        # applicable, default 1).
-        for event in event_set:
-            timestamp = datetime.datetime(
-                int(event['year']),
-                int(event.get('month', 1)),
-                int(event.get('day', 1)))
-            # Comments are lost
-            value = event['agg']
-            obj[TIME_SERIES_ALL][timestamp] = (
-                value, event['flag__max'], '')
-            if value >= 0:
-                obj[TIME_SERIES_POSITIVE][timestamp] = (
-                    value, event['flag__max'], '')
-            else:
-                obj[TIME_SERIES_NEGATIVE][timestamp] = (
-                    value, event['flag__max'], '')
-
-        if event is not None:
-            for k in obj.keys():
-                ## nice: we ran the loop at least once.
-                obj[k].location_id = series.location.id
-                obj[k].parameter_id = series.parameter.id
-                obj[k].time_step = series.timestep.id
-                #obj[k].moduleinstance = series.moduleinstance.id
-                obj[k].units = series.parameter.groupkey.unit
-                ## and add the TimeSeries to the result
-                result[(obj[k].location_id, obj[k].parameter_id, k)] = obj[k]
-    return result
-
-
 def cached_time_series_aggregated(graph_item, start, end,
                                   aggregation, aggregation_period):
     """
@@ -178,9 +73,8 @@ def cached_time_series_aggregated(graph_item, start, end,
     cache_key = agg_time_series_key(graph_item, start, end, aggregation, aggregation_period)
     ts_agg = cache.get(cache_key)
     if ts_agg is None:
-        qs = graph_item.series()
-        ts_agg = time_series_aggregated(qs, start, end,
-                                        aggregation, aggregation_period)
+        ts_agg = graph_item.time_series_aggregated(
+            aggregation, aggregation_period, dt_start=start, dt_end=end)
         cache.set(cache_key, ts_agg)
     return ts_agg
 
