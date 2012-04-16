@@ -5,7 +5,9 @@ Changelog of lizard-graph
 0.15 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Removed unused imports.
+
+- Moved GraphItem.time_series implementation to fewsnorm.
 
 
 0.14 (2012-04-12)

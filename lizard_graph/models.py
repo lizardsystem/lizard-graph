@@ -5,14 +5,12 @@ from lizard_fewsnorm.models import GeoLocationCache
 from lizard_fewsnorm.models import ModuleCache
 from lizard_fewsnorm.models import ParameterCache
 from lizard_fewsnorm.models import QualifierSetCache
-from lizard_fewsnorm.models import TimeSeriesCache
 from lizard_fewsnorm.models import TimeStepCache
 
 from lizard_map.models import ColorField
 
 from lizard_fewsnorm.models import Event
 from lizard_fewsnorm.models import Series
-from lizard_fewsnorm.models import TimeseriesComments
 from timeseries import timeseries
 
 import logging
@@ -285,27 +283,7 @@ class GraphItemMixin(models.Model):
         """
         source = self.fews_norm_source
         series = self.series()
-
-        result = {}
-        for single_series in series:
-            # Fill new timeseries with events from dt_start to dt_end
-            events = Event.from_raw(
-                single_series, dt_start, dt_end,
-                schema_prefix=source.database_schema_name).using(
-                source.database_name)
-
-            # Put the events in a Timeseries object
-            new_timeseries = timeseries.TimeSeries()
-            new_timeseries.location_id = single_series.location
-            new_timeseries.parameter_id = single_series.parameter
-            new_timeseries.time_step = single_series.timestep
-            new_timeseries.units = single_series.unit
-            for event in events:
-                new_timeseries[event.timestamp] = (
-                    event.value, event.flag, event.comment)
-
-            result[single_series.location, single_series.parameter] = new_timeseries
-        return result
+        return Event.time_series(source, series, dt_start, dt_end)
 
     def time_series_aggregated(
         self, aggregation, aggregation_period,
