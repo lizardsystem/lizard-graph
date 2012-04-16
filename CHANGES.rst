@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.15 (unreleased)
+0.15 (2012-04-16)
 -----------------
 
 - Removed unused imports.
