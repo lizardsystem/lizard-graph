@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.16 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Made admin for PredefinedGraph faster.
 
 
 0.15 (2012-04-16)
