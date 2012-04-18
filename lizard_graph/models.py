@@ -199,12 +199,21 @@ class GraphItemMixin(models.Model):
     """
     About location, parameter and modules and fetching timeseries.
     """
-    # TODO: location_wildcard. See readme.
-    # location_wildcard = models.CharField(
-    #     max_length=200, null=True, blank=True,
-    #     help_text=('If left empty, take location. If filled in and combined '
-    #                'with the url parameter \'locations\', this field '
-    #                'overrides the location field.'))
+    RELATED_LOCATION_CHOICES = (
+        ('l_esf2', 'l_esf2'),
+        ('l_zicht', 'l_zicht'),
+        ('l_extin', 'l_extin'),
+        ('l_wathte', 'l_wathte'),
+        ('l_kwel', 'l_kwel'),
+        ('l_wegz', 'l_wegz'),
+        ('l_chlor', 'l_chlor'),
+        ('l_oppq', 'l_oppq'),
+        ('l_grq', 'l_grq'),
+        ('l_stovq', 'l_stovq'),
+        ('l_debiet', 'l_debiet'),
+        ('l_gebied', 'l_gebied'),
+        )
+
     location = models.ForeignKey(
         GeoLocationCache, null=True, blank=True,
         help_text=('Optional even if the data source fewsnorm is used, '
@@ -224,6 +233,12 @@ class GraphItemMixin(models.Model):
     qualifierset = models.ForeignKey(
         QualifierSetCache, null=True, blank=True,
         help_text='For all types that require a fewsnorm source')
+    related_location = models.CharField(
+        max_length=20,
+        choices=RELATED_LOCATION_CHOICES,
+        null=True, blank=True,
+        help_text=('When filled in, it will take the location '
+                   'from this related_location column'))
 
     # Used by time_series_aggregated to 'flag' a time series.
     TIME_SERIES_ALL = 1
@@ -241,7 +256,9 @@ class GraphItemMixin(models.Model):
             return None
 
     def series_params(self):
-        """ Params for series """
+        """ Params for series
+        TODO: follow related_location, if provided.
+        """
         params = {}
         if self.location is not None:
             params['location'] = self.location.ident
@@ -283,7 +300,8 @@ class GraphItemMixin(models.Model):
         """
         source = self.fews_norm_source
         series = self.series()
-        return Event.time_series(source, series, dt_start, dt_end)
+        events = Event.time_series(source, series, dt_start, dt_end)
+        return events
 
     def time_series_aggregated(
         self, aggregation, aggregation_period,
