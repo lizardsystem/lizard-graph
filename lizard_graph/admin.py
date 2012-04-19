@@ -6,7 +6,7 @@ from lizard_graph.models import PredefinedGraph
 
 class GraphItemInline(admin.TabularInline):
     model = GraphItem
-    fields = ('location', 'parameter', 'module', 'time_step', 'qualifierset',
+    fields = ('location', 'related_location', 'parameter', 'module', 'time_step', 'qualifierset',
               'index', 'graph_type',
               'value', 'color', 'color_outside', 'line_width',
               'line_style', 'label', )

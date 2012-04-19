@@ -10,6 +10,7 @@ from lizard_fewsnorm.models import TimeStepCache
 from lizard_map.models import ColorField
 
 from lizard_fewsnorm.models import Event
+from lizard_fewsnorm.models import Location
 from lizard_fewsnorm.models import Series
 from timeseries import timeseries
 
@@ -261,7 +262,18 @@ class GraphItemMixin(models.Model):
         """
         params = {}
         if self.location is not None:
-            params['location'] = self.location.ident
+            if self.related_location:
+                # Fetch related location ident instead of own location ident
+                source = self.fews_norm_source
+                fews_location = Location.from_raw(
+                    schema_prefix=source.database_schema_name,
+                    ident=self.location.ident,
+                    related_location=self.related_location).using(
+                    source.database_name)[0]
+                params['location'] = fews_location.related_location
+            else:
+                # Default
+                params['location'] = self.location.ident
         if self.parameter is not None:
             params['parameter'] = self.parameter.ident
         if self.module is not None:
@@ -484,6 +496,8 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
             graph_item.value = graph_item_dict['polarity']
         if 'value' in graph_item_dict:
             graph_item.value = graph_item_dict['value']
+        if 'related_location' in graph_item_dict:
+            graph_item.related_location = graph_item_dict['related_location']
         if 'layout' in graph_item_dict:
             layout_dict = graph_item_dict['layout']
             graph_item.apply_layout_dict(layout_dict)
@@ -512,4 +526,6 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
             result['qualifierset'] = self.qualifierset.ident
         if self.value is not None:
             result['value'] = self.value
+        if self.related_location is not None:
+            result['related_location'] = self.related_location
         return result

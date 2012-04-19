@@ -7,7 +7,7 @@ Changelog of lizard-graph
 
 - Made admin for PredefinedGraph faster.
 
-- Started implementing related location follower, new
+- Implemented related location follower, new
   GraphItem.related_location.
 
 
