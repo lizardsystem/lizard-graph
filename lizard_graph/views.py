@@ -91,7 +91,7 @@ def cached_time_series_from_graph_item(graph_item, start, end):
             graph_item.qualifierset, start, end)).replace(' ', '_')
     cache_key = time_series_key(graph_item, start, end)
     ts = cache.get(cache_key)
-    if 1:  # if ts is None:
+    if ts is None:
         ts = graph_item.time_series(start, end)
         cache.set(cache_key, ts)
     return ts
