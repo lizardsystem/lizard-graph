@@ -2,8 +2,8 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.17 (unreleased)
------------------
+0.16.1 (2012-04-19)
+-------------------
 
 - Depend on correct fewsnorm version.
 
