@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.17 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Depend on correct fewsnorm version.
 
 
 0.16 (2012-04-19)
