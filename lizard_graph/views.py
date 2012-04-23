@@ -92,7 +92,8 @@ def cached_time_series_from_graph_item(graph_item, start, end):
     cache_key = time_series_key(graph_item, start, end)
     ts = cache.get(cache_key)
     if ts is None:
-        ts = graph_item.time_series(start, end)
+        series = graph_item.series()
+        ts = graph_item.time_series(series=series, dt_start=start, dt_end=end)
         cache.set(cache_key, ts)
     return ts
 
@@ -197,6 +198,7 @@ class GraphView(View, TimeSeriesViewMixin):
             'flags': False,
             'now-line': False,
             'format': 'png',
+            'unit-as-y-label': False,  # Take unit as y-label
             }
         get = self.request.GET
 
@@ -217,6 +219,8 @@ class GraphView(View, TimeSeriesViewMixin):
                         ('Tried to fetch a non-existing GeoLocationCache '
                          'object %s') % location_get)
                     location_get = GeoLocationCache(ident=location_get)
+                    # This item is probably not going to show, because
+                    # the fews_norm_source is not defined.
             try:
                 predefined_graph = PredefinedGraph.objects.get(
                     slug=predefined_graph_slug)
@@ -239,7 +243,8 @@ class GraphView(View, TimeSeriesViewMixin):
         graph_parameters = [
             'title', 'x-label', 'y-label', 'y-range-min', 'y-range-max',
             'aggregation', 'aggregation-period', 'reset-period', 'width',
-            'height', 'legend-location', 'flags', 'now-line', 'format', ]
+            'height', 'legend-location', 'flags', 'now-line', 'format',
+            'unit-as-y-label', ]
         for graph_parameter in graph_parameters:
             if graph_parameter in get:
                 graph_settings[graph_parameter] = get[graph_parameter]
@@ -288,9 +293,11 @@ class GraphView(View, TimeSeriesViewMixin):
             horizontalalignment='center', verticalalignment='top')
         # Disappears somewhere, but not so important now...
         # graph.axes.set_xlabel(graph_settings.get('x-label', ''))
+        # Can be overruled later by unit-as-y-label
         graph.axes.set_ylabel(graph_settings.get('y-label', ''))
 
         color_index = 0
+        unit_from_graph = '(no unit)'
         ts_stacked_sum = {
             'bar-positive': 0,
             'bar-negative': 0,
@@ -304,7 +311,9 @@ class GraphView(View, TimeSeriesViewMixin):
                 if graph_type == GraphItem.GRAPH_TYPE_LINE:
                     ts = cached_time_series_from_graph_item(
                         graph_item, dt_start, dt_end)
-                    for (loc, par), single_ts in ts.items():
+                    for (loc, par, unit), single_ts in ts.items():
+                        if unit:
+                            unit_from_graph = unit
                         graph.line_from_single_ts(
                             single_ts, graph_item,
                             default_color=default_colors[color_index],
@@ -315,7 +324,9 @@ class GraphView(View, TimeSeriesViewMixin):
                       graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
                     ts = cached_time_series_from_graph_item(
                         graph_item, dt_start, dt_end)
-                    for (loc, par), single_ts in ts.items():
+                    for (loc, par, unit), single_ts in ts.items():
+                        if unit:
+                            unit_from_graph = unit
                         if (graph_type == GraphItem.GRAPH_TYPE_STACKED_LINE):
                             current_ts = single_ts
                             stacked_key = 'line'
@@ -410,6 +421,8 @@ class GraphView(View, TimeSeriesViewMixin):
 
         if graph_settings['legend-location'] >= 0:
             graph.legend(legend_location=graph_settings['legend-location'])
+        if graph_settings.get('unit-as-y-label', False):
+            graph.axes.set_ylabel(unit_from_graph)
 
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
 

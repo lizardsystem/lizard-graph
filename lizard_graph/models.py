@@ -296,7 +296,7 @@ class GraphItemMixin(models.Model):
         return series
 
     def time_series(
-        self, dt_start=None, dt_end=None, with_comments=False):
+        self, series=None, dt_start=None, dt_end=None, with_comments=False):
         """
         Return dictionary of timeseries.
 
@@ -310,8 +310,9 @@ class GraphItemMixin(models.Model):
         Note: with_comments does nothing anymore, comments are always
         returned. The option is still there for compatibility.
         """
+        if not series:
+            series = self.series()
         source = self.fews_norm_source
-        series = self.series()
         events = Event.time_series(source, series, dt_start, dt_end)
         return events
 
