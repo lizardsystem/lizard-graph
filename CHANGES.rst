@@ -2,8 +2,8 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.16.2 (unreleased)
--------------------
+0.17 (2012-04-23)
+-----------------
 
 - Added option unit-as-y-label, which can be set to True.
 
