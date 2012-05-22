@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.19 (unreleased)
+0.19 (2012-05-22)
 -----------------
 
 - Reordered stacked items so they appear in the same order as the
