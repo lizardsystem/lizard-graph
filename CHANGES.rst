@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.18 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Now removes duplicate legend items (uses nens-graph 0.10).
 
 
 0.17 (2012-04-23)

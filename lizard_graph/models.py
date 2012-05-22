@@ -258,7 +258,6 @@ class GraphItemMixin(models.Model):
 
     def series_params(self):
         """ Params for series
-        TODO: follow related_location, if provided.
         """
         params = {}
         if self.location is not None:

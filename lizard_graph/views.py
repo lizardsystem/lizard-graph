@@ -420,7 +420,8 @@ class GraphView(View, TimeSeriesViewMixin):
                 logger.exception("Unknown error while drawing graph item.")
 
         if graph_settings['legend-location'] >= 0:
-            graph.legend(legend_location=graph_settings['legend-location'])
+            graph.legend(legend_location=graph_settings['legend-location'],
+                         remove_duplicates=True)
         if graph_settings.get('unit-as-y-label', False):
             graph.axes.set_ylabel(unit_from_graph)
 
