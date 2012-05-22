@@ -5,7 +5,8 @@ Changelog of lizard-graph
 0.19 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Reordered stacked items so they appear in the same order as the
+  legend. Requires nens-graph 0.11.
 
 
 0.18 (2012-05-22)

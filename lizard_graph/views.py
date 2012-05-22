@@ -303,6 +303,9 @@ class GraphView(View, TimeSeriesViewMixin):
             'bar-negative': 0,
             'line-cum': 0,
             'line': 0}
+        matplotlib_legend_index = 0
+        reversed_legend_items = []  # To be filled using matplotlib_legend_index
+
         # Let's draw these graph items.
         for graph_item in graph_items:
             graph_type = graph_item.graph_type
@@ -314,10 +317,11 @@ class GraphView(View, TimeSeriesViewMixin):
                     for (loc, par, unit), single_ts in ts.items():
                         if unit:
                             unit_from_graph = unit
-                        graph.line_from_single_ts(
+                        matplotlib_legend_index += graph.line_from_single_ts(
                             single_ts, graph_item,
                             default_color=default_colors[color_index],
                             flags=graph_settings['flags'])
+
                         color_index = (color_index + 1) % len(default_colors)
                 elif (graph_type ==
                       GraphItem.GRAPH_TYPE_STACKED_LINE_CUMULATIVE or
@@ -339,19 +343,23 @@ class GraphView(View, TimeSeriesViewMixin):
                         current_ts.is_locf = True
                         ts_stacked_sum[stacked_key] = (
                             current_ts + ts_stacked_sum[stacked_key])
-                        graph.line_from_single_ts(
+                        added = graph.line_from_single_ts(
                             ts_stacked_sum[stacked_key], graph_item,
                             default_color=default_colors[color_index],
                             flags=False)
+                        # Mark these items to be reversed in the legend.
+                        reversed_legend_items.extend(
+                            range(matplotlib_legend_index, matplotlib_legend_index + added))
+                        matplotlib_legend_index += added
                         color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_HORIZONTAL_LINE:
-                    graph.horizontal_line(
+                    matplotlib_legend_index += graph.horizontal_line(
                         graph_item.value,
                         graph_item.layout_dict(),
                         default_color=default_colors[color_index])
                     color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_VERTICAL_LINE:
-                    graph.vertical_line(
+                    matplotlib_legend_index += graph.vertical_line(
                         graph_item.value,
                         graph_item.layout_dict(),
                         default_color=default_colors[color_index])
@@ -373,10 +381,16 @@ class GraphView(View, TimeSeriesViewMixin):
                             # Make sure all timestamps are present.
                             ts_stacked_sum[stacked_key] += single_ts * 0
                             abs_single_ts = polarity * abs(single_ts)
-                            graph.bar_from_single_ts(
+                            added = graph.bar_from_single_ts(
                                 abs_single_ts, graph_item, bar_width,
                                 default_color=default_colors[color_index],
                                 bottom_ts=ts_stacked_sum[stacked_key])
+                            # Mark these items to be reversed in the legend.
+                            if polarity == 1:
+                                reversed_legend_items.extend(
+                                    range(matplotlib_legend_index,
+                                          matplotlib_legend_index + added))
+                            matplotlib_legend_index += added
                             ts_stacked_sum[stacked_key] += abs_single_ts
                             color_index = (color_index + 1) % len(
                                 default_colors)
@@ -408,7 +422,7 @@ class GraphView(View, TimeSeriesViewMixin):
                             option == TIME_SERIES_NEGATIVE):
                             ts_stacked_sum[stacked_key] += single_ts * 0
                             abs_single_ts = polarity[option] * abs(single_ts)
-                            graph.bar_from_single_ts(
+                            matplotlib_legend_index += graph.bar_from_single_ts(
                                 abs_single_ts, graph_item, bar_width,
                                 default_color=default_colors[color_index],
                                 bottom_ts=ts_stacked_sum[stacked_key])
@@ -420,8 +434,10 @@ class GraphView(View, TimeSeriesViewMixin):
                 logger.exception("Unknown error while drawing graph item.")
 
         if graph_settings['legend-location'] >= 0:
-            graph.legend(legend_location=graph_settings['legend-location'],
-                         remove_duplicates=True)
+            graph.legend(
+                legend_location=graph_settings['legend-location'],
+                reversed_legend_items=reversed_legend_items,
+                remove_duplicates=True)
         if graph_settings.get('unit-as-y-label', False):
             graph.axes.set_ylabel(unit_from_graph)
 

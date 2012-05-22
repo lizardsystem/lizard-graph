@@ -16,7 +16,7 @@ install_requires = [
     'lizard-ui >= 3.0',
     'lizard-fewsnorm >= 0.16',
     'timeseries',
-    'nens-graph >= 0.5.1',
+    'nens-graph >= 0.11',
     'pkginfo',
     ],
 
