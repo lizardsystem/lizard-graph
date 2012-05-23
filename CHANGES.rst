@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.20 (unreleased)
+0.20 (2012-05-23)
 -----------------
 
 - Added output format options: bmp, emf, eps, pdf, ps, raw, rgb, rgba,
