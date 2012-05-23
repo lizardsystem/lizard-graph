@@ -464,6 +464,54 @@ class GraphView(View, TimeSeriesViewMixin):
                 graph_settings.get('title', 'grafiek'))
             graph.timeseries_csv(response)
             return response
+        elif response_format == 'bmp':
+            return graph.render(
+                response=HttpResponse(content_type='image/bmp'),
+                format='bmp')
+        elif response_format == 'emf':
+            return graph.render(
+                response=HttpResponse(content_type='image/x-emf'),
+                format='emf')
+        elif response_format == 'eps':
+            return graph.render(
+                response=HttpResponse(content_type='image/x-eps'),
+                format='eps')
+        # elif response_format == 'jpg':
+        #     return graph.render(
+        #         response=HttpResponse(content_type='image/jpg'),
+        #         format='jpg')
+        elif response_format == 'pdf':
+            return graph.render(
+                response=HttpResponse(content_type='application/pdf'),
+                format='pdf')
+        # elif response_format == 'png2':
+        #     return graph.render(
+        #         response=HttpResponse(content_type='image/png'),
+        #         format='png2')
+        elif response_format == 'ps':
+            return graph.render(
+                response=HttpResponse(content_type='application/postscript'),
+                format='ps')
+        elif response_format == 'raw':
+            return graph.render(
+                response=HttpResponse(content_type='test/plain'),
+                format='raw')
+        elif response_format == 'rgb':
+            return graph.render(
+                response=HttpResponse(content_type='image/x-rgb'),
+                format='rgb')
+        elif response_format == 'rgba':
+            return graph.render(
+                response=HttpResponse(content_type='image/x-rgba'),
+                format='rgba')
+        elif response_format == 'svg':
+            return graph.render(
+                response=HttpResponse(content_type='image/svg+xml'),
+                format='svg')
+        elif response_format == 'svgz':
+            return graph.render(
+                response=HttpResponse(content_type='image/svg+xml'),
+                format='svgz')
         else:
-            return graph.png_response(
+            return graph.render(
                 response=HttpResponse(content_type='image/png'))

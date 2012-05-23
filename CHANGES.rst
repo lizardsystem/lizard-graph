@@ -5,7 +5,8 @@ Changelog of lizard-graph
 0.20 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Added output format options: bmp, emf, eps, pdf, ps, raw, rgb, rgba,
+  svg, svgz. Existing options were csv and png (default).
 
 
 0.19 (2012-05-22)
