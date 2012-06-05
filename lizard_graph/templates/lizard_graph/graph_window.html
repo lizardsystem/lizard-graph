@@ -15,8 +15,13 @@
     }
 
     set_graph_url = function() {
-        var height = window.innerHeight - 20
-        var width = window.innerWidth - 20
+        if (window.innerHeight) {
+            var height = window.innerHeight - 20;
+            var width = window.innerWidth - 20;
+        } else { //ie
+            var height = document.documentElement.clientHeight - 20;
+            var width = document.documentElement.clientWidth - 20;
+        }
         window.document.body.innerHTML = '<img src="' + graph_url + '&height=' + height + '&width='+ width +'"></img>'
     }
 
