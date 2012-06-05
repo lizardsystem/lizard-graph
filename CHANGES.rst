@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.21 (unreleased)
+0.21 (2012-06-05)
 -----------------
 
 - Nothing changed yet.
