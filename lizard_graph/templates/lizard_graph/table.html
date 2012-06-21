@@ -1,0 +1,30 @@
+<div class="dialog-box">
+{% for row in data %}
+  {% ifequal row.type 'title' %}
+    <h2>{{ row.data }}</h2>
+  {% endifequal %}
+
+  {% ifequal row.type 'table-header' %}
+    <table>
+      <thead>
+        {% for item in row.data %}
+        <th>{{ item }}</th>
+        {% endfor %}
+      </thead>
+      <tbody>
+  {% endifequal %}
+
+  {% ifequal row.type 'event' %}
+    <tr>
+      {% for item in row.data %}
+      <td>{{ item }}</td>
+      {% endfor %}
+    </tr>
+  {% endifequal %}
+
+  {% ifequal row.type 'table-footer' %}
+      </tbody>
+    </table>
+  {% endifequal %}
+{% endfor %}
+</div>

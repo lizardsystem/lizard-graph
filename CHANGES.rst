@@ -9,6 +9,8 @@ Changelog of lizard-graph
   your browser will pick a folder to download the item instead of
   displaying it.
 
+- Added graph html format: table view.
+
 
 0.21 (2012-06-05)
 -----------------

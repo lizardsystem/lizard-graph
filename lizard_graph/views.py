@@ -6,6 +6,7 @@ import iso8601
 import logging
 from matplotlib.dates import date2num
 
+from django.shortcuts import render_to_response
 from django.core.cache import cache
 from django.db.models import Avg
 from django.db.models import Max
@@ -512,6 +513,11 @@ class GraphView(View, TimeSeriesViewMixin):
             return graph.render(
                 response=HttpResponse(content_type='image/svg+xml'),
                 format='svgz')
+        elif response_format == 'html':
+            # Display html table
+            return render_to_response(
+                'lizard_graph/table.html',
+                {'data': graph.timeseries_as_list()})
         elif response_format == 'png_attach':
             response = HttpResponse(mimetype='image/png')
             response['Content-Disposition'] = (
