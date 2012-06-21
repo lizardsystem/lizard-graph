@@ -512,6 +512,13 @@ class GraphView(View, TimeSeriesViewMixin):
             return graph.render(
                 response=HttpResponse(content_type='image/svg+xml'),
                 format='svgz')
+        elif response_format == 'png_attach':
+            response = HttpResponse(mimetype='image/png')
+            response['Content-Disposition'] = (
+                'attachment; filename="%s.png"' %
+                graph_settings.get('title', 'grafiek'))
+            graph.render(response=response)
+            return response
         else:
             return graph.render(
                 response=HttpResponse(content_type='image/png'))
