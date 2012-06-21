@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.22 (unreleased)
+0.22 (2012-06-21)
 -----------------
 
 - Added format=png_attach, which will return the png as attachment;
