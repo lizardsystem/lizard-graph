@@ -4,13 +4,12 @@
 import datetime
 import iso8601
 import logging
+import xlwt as excel
+from StringIO import StringIO
 from matplotlib.dates import date2num
 
 from django.shortcuts import render_to_response
 from django.core.cache import cache
-from django.db.models import Avg
-from django.db.models import Max
-from django.db.models import Sum
 from django.views.generic.base import View
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -22,8 +21,6 @@ from lizard_graph.models import PredefinedGraph
 from lizard_graph.models import GraphItem
 
 from nens_graph.common import DateGridGraph
-
-from timeseries import timeseries
 
 from lizard_map.dateperiods import next_month
 from lizard_map.dateperiods import next_year
@@ -44,7 +41,7 @@ TIME_SERIES_NEGATIVE = 3
 
 def graph_window(request):
 
-    title = request.GET.get('title','grafiek')
+    title = request.GET.get('title', 'grafiek')
     graph_url = request.GET.get('graph_url', '')
 
     t = get_template('lizard_graph/graph_window.html')
@@ -71,7 +68,9 @@ def cached_time_series_aggregated(graph_item, start, end,
             graph_item.parameter, graph_item.module, graph_item.time_step,
             graph_item.qualifierset, start, end, aggregation,
             aggregation_period)).replace(' ', '_')
-    cache_key = agg_time_series_key(graph_item, start, end, aggregation, aggregation_period)
+
+    cache_key = agg_time_series_key(
+        graph_item, start, end, aggregation, aggregation_period)
     ts_agg = cache.get(cache_key)
     if ts_agg is None:
         ts_agg = graph_item.time_series_aggregated(
@@ -166,6 +165,75 @@ class TimeSeriesViewMixin(object):
             return dt_start, dt_end
         else:
             return dt_end, dt_start
+
+
+def data_as_xls(data):
+    """
+        create csv from a data dict:
+
+        format of data:
+    """
+    wb = excel.Workbook()
+
+    font1 = excel.Formatting.Font()
+    font1.name = 'Arial'
+    font1.height = 200
+    font1.bold = True
+
+    font2 = excel.Formatting.Font()
+    font2.name = 'Arial'
+    font2.height = 160
+
+    borders = excel.Borders()
+    borders.bottom = 10
+
+    st1 = excel.XFStyle()
+    st2 = excel.XFStyle()
+
+    st1.font = font1
+    st2.font = font2
+    st1.borders = borders
+
+    wb.add_style(st1)
+    wb.add_style(st2)
+
+    for row in data:
+
+        if row['type'] == 'title':
+            # start a new sheet with title
+            try:
+                sheet_name = str(row['data'].replace('/', ' per '))
+                ws = wb.add_sheet(sheet_name)
+                col_nr = 0
+                row_nr = 0
+            except:
+                # If add_sheet crashes, timeseries will be added
+                # beneath other timeseries
+                logger.error(
+                    'Error exporting xls in wb.add_sheet with name: %s' %
+                    sheet_name)
+            ws.write(col_nr, row_nr, str(row['data']))
+            row_nr += 1
+        elif row['type'] == 'table-header':
+            col_nr = 0
+            for col_item in row['data']:
+                ws.write(row_nr, col_nr, str(col_item))
+                col_nr += 1
+            row_nr += 1
+        elif row['type'] == 'event':
+            ws.write(row_nr, 0, str(row['data'][0]))  # timestamp
+            ws.write(row_nr, 1, str(row['data'][1]))  # value
+            ws.write(row_nr, 2, str(row['data'][2]))  # flag
+            ws.write(row_nr, 3,
+                     str(row['data'][3] if row['data'][3] else ''))  # comment
+            row_nr += 1
+
+    buffer = StringIO()
+    wb.save(buffer)
+    del wb
+    buffer.seek(0)
+
+    return  buffer
 
 
 class GraphView(View, TimeSeriesViewMixin):
@@ -305,7 +373,9 @@ class GraphView(View, TimeSeriesViewMixin):
             'line-cum': 0,
             'line': 0}
         matplotlib_legend_index = 0
-        reversed_legend_items = []  # To be filled using matplotlib_legend_index
+
+        # To be filled using matplotlib_legend_index
+        reversed_legend_items = []
 
         # Let's draw these graph items.
         for graph_item in graph_items:
@@ -350,7 +420,8 @@ class GraphView(View, TimeSeriesViewMixin):
                             flags=False)
                         # Mark these items to be reversed in the legend.
                         reversed_legend_items.extend(
-                            range(matplotlib_legend_index, matplotlib_legend_index + added))
+                            range(matplotlib_legend_index,
+                                  matplotlib_legend_index + added))
                         matplotlib_legend_index += added
                         color_index = (color_index + 1) % len(default_colors)
                 elif graph_type == GraphItem.GRAPH_TYPE_HORIZONTAL_LINE:
@@ -462,7 +533,7 @@ class GraphView(View, TimeSeriesViewMixin):
             response = HttpResponse(mimetype='text/csv')
             response['Content-Disposition'] = (
                 'attachment; filename="%s.csv"' %
-                graph_settings.get('title', 'grafiek'))
+                graph_settings.get('title', 'export'))
             graph.timeseries_csv(response)
             return response
         elif response_format == 'bmp':
@@ -518,11 +589,16 @@ class GraphView(View, TimeSeriesViewMixin):
             return render_to_response(
                 'lizard_graph/table.html',
                 {'data': graph.timeseries_as_list()})
+        elif response_format == 'xls':
+            xls = data_as_xls(data=graph.timeseries_as_list())
+            response = HttpResponse(xls.read(), mimetype='application/xls')
+            response['Content-Disposition'] = 'attachment; filename="export.xls"'
+            return response
         elif response_format == 'png_attach':
             response = HttpResponse(mimetype='image/png')
             response['Content-Disposition'] = (
                 'attachment; filename="%s.png"' %
-                graph_settings.get('title', 'grafiek'))
+                graph_settings.get('title', 'export'))
             graph.render(response=response)
             return response
         else:
