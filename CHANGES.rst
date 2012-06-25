@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.24 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Added field GraphItem.location_postpend and migration.
 
 
 0.23 (2012-06-25)

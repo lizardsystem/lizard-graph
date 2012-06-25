@@ -221,6 +221,10 @@ class GraphItemMixin(models.Model):
                    'because location '
                    'can be provided last-minute. If filled in, it overrides '
                    'the provided location'))
+    location_postpend = models.CharField(
+        max_length=40, null=True, blank=True,
+        help_text=('Some locations are found by appending '
+                   'fixed strings to the location_id'))
     parameter = models.ForeignKey(
         ParameterCache, null=True, blank=True,
         help_text='For all types that require a fewsnorm source')
