@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.23 (unreleased)
+0.23 (2012-06-25)
 -----------------
 
 - Added XLS support as format for graph.
