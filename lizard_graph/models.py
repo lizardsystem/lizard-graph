@@ -265,18 +265,22 @@ class GraphItemMixin(models.Model):
         """
         params = {}
         if self.location is not None:
+            ident = self.location.ident
+            # location_postpend
+            if self.location_postpend:
+                ident += self.location_postpend
             if self.related_location:
                 # Fetch related location ident instead of own location ident
                 source = self.fews_norm_source
                 fews_location = Location.from_raw(
                     schema_prefix=source.database_schema_name,
-                    ident=self.location.ident,
+                    ident=ident,
                     related_location=self.related_location).using(
                     source.database_name)[0]
                 params['location'] = fews_location.related_location
             else:
                 # Default
-                params['location'] = self.location.ident
+                params['location'] = ident
         if self.parameter is not None:
             params['parameter'] = self.parameter.ident
         if self.module is not None:
@@ -483,6 +487,8 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
         graph_item = GraphItem()
         graph_item.graph_type = graph_type
         graph_item.location = location
+        if 'location_postpend' in graph_item_dict:
+            graph_item.location_postpend = graph_item_dict['location_postpend']
         if 'parameter' in graph_item_dict:
             parameter = ParameterCache(ident=graph_item_dict['parameter'])
             graph_item.parameter = parameter
@@ -520,6 +526,8 @@ class GraphItem(GraphItemMixin, GraphLayoutMixin):
             }
         if self.location is not None:
             result['location'] = self.location.ident
+        if self.location_postpend is not None:
+            result['location_postpend'] = self.location_postpend
         if self.parameter is not None:
             result['parameter'] = self.parameter.ident
         if self.module is not None:

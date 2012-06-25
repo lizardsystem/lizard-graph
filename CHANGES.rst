@@ -5,6 +5,9 @@ Changelog of lizard-graph
 0.24 (unreleased)
 -----------------
 
+- Added "postpend" option to "find" related locations in a different
+  way than the "related location" method.
+
 - Added field GraphItem.location_postpend and migration.
 
 

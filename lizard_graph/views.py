@@ -63,8 +63,9 @@ def cached_time_series_aggregated(graph_item, start, end,
     def agg_time_series_key(
         graph_item, start, end, aggregation, aggregation_period):
 
-        return ('ts_agg::%s:%s:%s:%s:%s:%s::%s:%s:%s:%s' % (
+        return ('ts_agg::%s:%s:%s:%s:%s:%s:%s::%s:%s:%s:%s' % (
             graph_item.fews_norm_source.database_name, graph_item.location,
+            graph_item.location_postpend,
             graph_item.parameter, graph_item.module, graph_item.time_step,
             graph_item.qualifierset, start, end, aggregation,
             aggregation_period)).replace(' ', '_')
@@ -84,8 +85,9 @@ def cached_time_series_from_graph_item(graph_item, start, end):
     Cached version of graph_item.time_series(start, end)
     """
     def time_series_key(graph_item, start, end):
-        return ('ts::%s:%s:%s:%s:%s:%s:%s::%s:%s' % (
+        return ('ts::%s:%s:%s:%s:%s:%s:%s:%s::%s:%s' % (
             graph_item.fews_norm_source.database_name, graph_item.location,
+            graph_item.location_postpend,
             graph_item.related_location,
             graph_item.parameter, graph_item.module, graph_item.time_step,
             graph_item.qualifierset, start, end)).replace(' ', '_')
