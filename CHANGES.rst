@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.24 (unreleased)
+0.24 (2012-06-25)
 -----------------
 
 - Added "postpend" option to "find" related locations in a different
