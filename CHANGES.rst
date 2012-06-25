@@ -5,7 +5,7 @@ Changelog of lizard-graph
 0.25 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- PEP8.
 
 
 0.24 (2012-06-25)
