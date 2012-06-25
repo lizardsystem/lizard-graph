@@ -350,7 +350,8 @@ class GraphItemMixin(models.Model):
                 GraphItemMixin.TIME_SERIES_NEGATIVE: timeseries.TimeSeries()}
             # Somehow get the events with aggregation in it
             # aggregation == PredefinedGraph.AGGREGATION_AVG, AGGREGATION_SUM
-            # aggregation_period == PredefinedGraph.PERIOD_YEAR, PERIOD_MONTH, PERIOD_QUARTER, PERIOD_DAY
+            # aggregation_period == PredefinedGraph.PERIOD_YEAR, PERIOD_MONTH,
+            # PERIOD_QUARTER, PERIOD_DAY
             # between dt_start and dt_end
             events = Event.agg_from_raw(
                 single_series, dt_start=dt_start, dt_end=dt_end,
@@ -363,11 +364,13 @@ class GraphItemMixin(models.Model):
                 obj[GraphItemMixin.TIME_SERIES_ALL][event.timestamp] = (
                     event.value, event.flag, event.comment)
                 if event.value >= 0:
-                    obj[GraphItemMixin.TIME_SERIES_POSITIVE][event.timestamp] = (
-                    event.value, event.flag, event.comment)
+                    obj[GraphItemMixin.TIME_SERIES_POSITIVE][
+                        event.timestamp] = (
+                        event.value, event.flag, event.comment)
                 else:
-                    obj[GraphItemMixin.TIME_SERIES_NEGATIVE][event.timestamp] = (
-                    event.value, event.flag, event.comment)
+                    obj[GraphItemMixin.TIME_SERIES_NEGATIVE][
+                        event.timestamp] = (
+                        event.value, event.flag, event.comment)
 
             # Now put the timeseries in the result
             for k in obj.keys():
@@ -376,7 +379,8 @@ class GraphItemMixin(models.Model):
                 obj[k].time_step = single_series.timestep
                 obj[k].units = single_series.unit
 
-                result[single_series.location, single_series.parameter, k] = obj[k]
+                result[single_series.location,
+                       single_series.parameter, k] = obj[k]
 
         return result
 

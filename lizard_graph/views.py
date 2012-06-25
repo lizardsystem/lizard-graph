@@ -594,7 +594,8 @@ class GraphView(View, TimeSeriesViewMixin):
         elif response_format == 'xls':
             xls = data_as_xls(data=graph.timeseries_as_list())
             response = HttpResponse(xls.read(), mimetype='application/xls')
-            response['Content-Disposition'] = 'attachment; filename="export.xls"'
+            response['Content-Disposition'] = ('attachment; '
+                                               'filename="export.xls"')
             return response
         elif response_format == 'png_attach':
             response = HttpResponse(mimetype='image/png')
