@@ -5,6 +5,8 @@ Changelog of lizard-graph
 0.25 (unreleased)
 -----------------
 
+- Now really added migration for location_postpend.
+
 - PEP8.
 
 
