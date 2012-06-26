@@ -2,8 +2,8 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.25 (unreleased)
------------------
+0.24.1 (2012-06-26)
+-------------------
 
 - Now really added migration for location_postpend.
 
