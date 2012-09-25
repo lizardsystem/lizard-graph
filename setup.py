@@ -15,6 +15,7 @@ install_requires = [
     'django-nose',
     'lizard-ui >= 3.0',
     'lizard-fewsnorm >= 0.16',
+    'lizard-security',
     'timeseries',
     'xlwt',
     'nens-graph >= 0.13',

@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'lizard_graph',
     'lizard_geo',
     'lizard_fewsnorm',
+    'lizard_security',
     'lizard_ui',
     'staticfiles',
     'compressor',

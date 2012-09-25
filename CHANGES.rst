@@ -5,7 +5,9 @@ Changelog of lizard-graph
 0.24.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Changed url parameter unit-as-y-label to unit_as_y_label.
+
+- Configured setup.py, testsettings.py to run test.
 
 
 0.24.1 (2012-06-26)

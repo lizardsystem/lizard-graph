@@ -269,7 +269,7 @@ class GraphView(View, TimeSeriesViewMixin):
             'flags': False,
             'now-line': False,
             'format': 'png',
-            'unit-as-y-label': False,  # Take unit as y-label
+            'unit_as_y_label': False,  # Take unit as y-label
             }
         get = self.request.GET
 
@@ -315,7 +315,7 @@ class GraphView(View, TimeSeriesViewMixin):
             'title', 'x-label', 'y-label', 'y-range-min', 'y-range-max',
             'aggregation', 'aggregation-period', 'reset-period', 'width',
             'height', 'legend-location', 'flags', 'now-line', 'format',
-            'unit-as-y-label', ]
+            'unit_as_y_label', ]
         for graph_parameter in graph_parameters:
             if graph_parameter in get:
                 graph_settings[graph_parameter] = get[graph_parameter]
@@ -364,7 +364,7 @@ class GraphView(View, TimeSeriesViewMixin):
             horizontalalignment='center', verticalalignment='top')
         # Disappears somewhere, but not so important now...
         # graph.axes.set_xlabel(graph_settings.get('x-label', ''))
-        # Can be overruled later by unit-as-y-label
+        # Can be overruled later by unit_as_y_label
         graph.axes.set_ylabel(graph_settings.get('y-label', ''))
 
         color_index = 0
@@ -512,7 +512,7 @@ class GraphView(View, TimeSeriesViewMixin):
                 legend_location=graph_settings['legend-location'],
                 reversed_legend_items=reversed_legend_items,
                 remove_duplicates=True)
-        if graph_settings.get('unit-as-y-label', False):
+        if graph_settings.get('unit_as_y_label', False):
             graph.axes.set_ylabel(unit_from_graph)
 
         graph.axes.set_xlim(date2num((dt_start, dt_end)))
