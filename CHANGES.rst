@@ -2,7 +2,7 @@ Changelog of lizard-graph
 ===================================================
 
 
-0.24.2 (unreleased)
+0.24.2 (2012-09-25)
 -------------------
 
 - Changed url parameter unit-as-y-label to unit_as_y_label.
